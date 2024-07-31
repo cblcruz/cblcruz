@@ -1,0 +1,3 @@
+size: 640
+description: Lookup table to determine treatment of common sites (Suppress, Sample)
+rows: 28

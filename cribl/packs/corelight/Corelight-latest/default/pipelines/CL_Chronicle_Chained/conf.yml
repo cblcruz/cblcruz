@@ -1,0 +1,1894 @@
+output: default
+streamtags: []
+groups:
+  SCdHaP:
+    name: Conn
+    index: 1
+    disabled: false
+  CQPiez:
+    name: HTTP, http_red, http2
+    index: 2
+    disabled: false
+  DochLT:
+    name: DNS, DNS_red
+    index: 3
+    disabled: false
+  rshsja:
+    name: Files, Files_red
+    index: 4
+    disabled: false
+  xFX2aZ:
+    name: SMB Files
+    index: 5
+    disabled: false
+  CCfXiV:
+    name: SMB Mapping
+    disabled: false
+    index: 6
+  Rglc2p:
+    name: SSL, SSL_red
+    disabled: false
+    index: 7
+  5I4Qph:
+    name: SSH
+    index: 8
+    disabled: false
+  NS1B0C:
+    name: RDP
+    index: 9
+    disabled: false
+  gzMFXH:
+    name: DHCP
+    disabled: false
+    index: 10
+  E4vvls:
+    name: DNP3
+    disabled: false
+    index: 11
+  rIEzjZ:
+    name: DCE_RPC
+    index: 12
+  mmMLQR:
+    name: Kerberos
+    disabled: false
+    index: 13
+  Xaoj0H:
+    name: LDAP
+    disabled: false
+    index: 14
+  1DyNtY:
+    name: LDAP Seach
+    disabled: false
+    index: 15
+  MIHarc:
+    name: Syslog
+    disabled: false
+    index: 16
+  g3lK8S:
+    name: Weird, Weird_red
+    disabled: false
+    index: 17
+  X34KxR:
+    name: x509, x509_red
+    index: 18
+    disabled: false
+  fRy2vY:
+    name: Radius
+    disabled: false
+    index: 19
+  LfDAAA:
+    name: NTLM
+    disabled: false
+    index: 20
+  xEmrIU:
+    name: NTP
+    disabled: false
+    index: 21
+  L5A9Vc:
+    name: Suricata Corelight
+    disabled: false
+    index: 22
+  tE6Iwu:
+    name: Intel
+    index: 23
+  VXb7m3:
+    name: Notice
+    disabled: false
+    index: 24
+asyncFuncTimeout: 1000
+functions:
+  - id: eval
+    filter: "true"
+    disabled: false
+    conf:
+      add:
+        - disabled: false
+          name: "'metadata.vendor_name'"
+          value: "'Corelight'"
+        - disabled: false
+          name: "'metadata.product_event_type'"
+          value: _path
+        - disabled: false
+          name: "'metadata.product_event_type'"
+          value: __e['@path']
+        - disabled: false
+          value: _system_name
+          name: "'observer.hostname'"
+        - disabled: false
+          name: "'metadata.event_timestamp'"
+          value: ts
+        - disabled: false
+          name: "'metadata.event_timestamp'"
+          value: __e['@timestamp']
+        - disabled: false
+          name: "'about.labels [uid]'"
+          value: uid
+        - disabled: false
+          value: __e['id.orig_h']
+          name: "'principal.ip'"
+        - disabled: false
+          name: "'principal.port'"
+          value: __e['id.orig_p']
+        - disabled: false
+          name: "'target.ip'"
+          value: __e['id.resp_h']
+        - disabled: false
+          name: "'target.port'"
+          value: __e['id.resp_p']
+      remove:
+        - "'id.orig_h'"
+        - "'id.orig_p'"
+        - "'id.resp_h'"
+        - "'id.resp_p'"
+        - ts
+        - uid
+  - id: eval
+    filter: _path.startsWith('conn') || __e['@path'].startsWith('conn') ||
+      sourcetype.includes('conn')
+    disabled: false
+    conf:
+      add:
+        - disabled: false
+          name: "'metadata.event_type'"
+          value: "'NETWORK_CONNECTION'"
+        - disabled: false
+          name: "'metadata.product_name'"
+          value: "'Zeek'"
+        - disabled: false
+          value: C.Lookup('CL_Conn_state_Chronicle.csv', code).match(conn_state, 'state')
+          name: "'metadata.description'"
+        - disabled: false
+          name: "'security_result.severity'"
+          value: "'INFORMATIONAL'"
+      remove:
+        - cribl_*
+        - _system_name
+        - _write_ts
+        - _time
+        - conn_state
+    groupId: SCdHaP
+  - id: rename
+    filter: _path.startsWith('conn') || __e['@path'].startsWith('conn') ||
+      sourcetype.includes('conn')
+    disabled: false
+    conf:
+      wildcardDepth: 5
+      rename:
+        - currentName: proto
+          newName: "'network.ip_protocol'"
+        - currentName: service
+          newName: "'network.application_protocol'"
+        - currentName: duration
+          newName: "'network.session_duration'"
+        - newName: "'network.sent_bytes'"
+          currentName: orig_bytes
+        - currentName: resp_bytes
+          newName: "'network.received_bytes'"
+        - newName: "'about.labels [local_orig]'"
+          currentName: local_orig
+        - newName: "'about.labels [local_resp]'"
+          currentName: local_resp
+        - newName: "'about.labels [missed_bytes]'"
+          currentName: missed_bytes
+        - newName: "'network.sent_packets'"
+          currentName: orig_pkts
+        - newName: "'principal.labels [orig_ip_bytes]'"
+          currentName: orig_ip_bytes
+        - newName: "'network.received_packets'"
+          currentName: resp_pkts
+        - newName: "'target.labels [resp_ip_bytes]'"
+          currentName: resp_ip_bytes
+        - newName: "'intermediary.labels [tunnel_parent]'"
+          currentName: tunnel_parents
+        - newName: "'principal.ip_geo_artifact.location.country_or_region'"
+          currentName: orig_cc
+        - newName: "'target.ip_geo_artifact.location.country_or_region'"
+          currentName: resp_cc
+        - newName: "'security_result.rule_id'"
+          currentName: suri_ids
+        - newName: "'security_result.url_back_to_product'"
+          currentName: "'spcap.url'"
+        - newName: "'security_result.rule_labels [spcap_rule]'"
+          currentName: "'spcap.rule'"
+        - newName: "'security_result.detection_fields [spcap_trigger]'"
+          currentName: "'spcap.trigger'"
+        - newName: "'about.application'"
+          currentName: app
+        - currentName: corelight_shunted
+          newName: "'about.labels [corelight_shunted]'"
+        - newName: "'principal.labels [orig_shunted_pkts]'"
+          currentName: orig_shunted_pkts
+        - newName: "'principal.labels [orig_shunted_bytes]'"
+          currentName: orig_shunted_bytes
+        - newName: "'target.labels [resp_shunted_pkts]'"
+          currentName: resp_shunted_pkts
+        - newName: "'principal.mac'"
+          currentName: orig_l2_addr
+        - currentName: resp_l2_addr
+          newName: "'target.mac'"
+        - newName: "'principal.labels [id_orig_h_n_src]'"
+          currentName: id_orig_h_n.src
+        - currentName: id_orig_h_n.vals
+          newName: "'principal.labels [id_orig_h_n_val]'"
+        - currentName: id_resp_h_n.src
+          newName: "'target.labels [id_resp_h_n_src]'"
+        - currentName: id_resp_h_n.vals
+          newName: "'target.labels [id_resp_h_n_val]'"
+        - newName: "'intermediary.labels [vlan]'"
+          currentName: vlan
+        - newName: "'intermediary.labels [inner_vlan]'"
+          currentName: inner_vlan
+        - newName: "'network.community_id'"
+          currentName: community_id
+    groupId: SCdHaP
+  - id: eval
+    filter: _path.startsWith('http') || __e['@path'].startsWith('http') ||
+      sourcetype.includes('http')
+    disabled: false
+    conf:
+      add:
+        - disabled: false
+          name: "'metadata.event_type'"
+          value: "'NETWORK_HTTP'"
+        - disabled: false
+          name: "'metadata.product_name'"
+          value: "'Zeek'"
+        - disabled: false
+          name: __e['src.file.names']
+          value: "orig_filenames ? orig_filenames[0]: undefined"
+        - disabled: false
+          value: "(orig_filenames && (orig_filenames.length > 1)) ?
+            orig_filenames.slice(1,orig_filenames.length) : undefined"
+          name: __e['about.file.names']
+        - disabled: false
+          name: "'src.file.mime_type'"
+          value: "orig_mime_types ? orig_mime_types[0]: undefined"
+        - disabled: false
+          value: "(orig_mime_types && (orig_mime_types.length > 1)) ?
+            orig_mime_types.slice(1,orig_mime_types.length) : undefined"
+          name: "'about.file.mime_type'"
+        - disabled: false
+          name: "'target.file.names'"
+          value: "resp_filenames ? resp_filenames[0]: undefined"
+        - disabled: false
+          name: "'about.file.names'"
+          value: "(resp_filenames && (resp_filenames.length > 1)) ?
+            resp_filenames.slice(1,resp_filenames.length) : undefined"
+        - disabled: false
+          name: "'target.file.mime_type\t'"
+          value: "resp_mime_types ? resp_mime_types[0]: undefined"
+        - disabled: false
+          name: "'about.file.mime_type'"
+          value: "(resp_mime_types && (resp_mime_types.length > 1)) ?
+            resp_mime_types.slice(1,resp_mime_types.length) : undefined"
+      remove:
+        - resp_mime_types
+    groupId: CQPiez
+  - id: rename
+    filter: _path.startsWith('http') || __e['@path'].startsWith('http') ||
+      sourcetype.includes('http')
+    disabled: false
+    conf:
+      wildcardDepth: 5
+      rename:
+        - currentName: trans_depth
+          newName: "'about.labels [trans_depth]'"
+        - currentName: method
+          newName: "'network.http.method'"
+        - newName: "'target.hostname'"
+          currentName: host
+        - newName: "'target.url'"
+          currentName: uri
+        - newName: "'network.http.referral_url'"
+          currentName: referrer
+        - newName: "'network.application_protocol_version'"
+          currentName: version
+        - newName: "'network.http.user_agent'"
+          currentName: user_agent
+        - newName: "'principal.hostname'"
+          currentName: origin
+        - newName: "'network.sent_bytes'"
+          currentName: request_body_len
+        - currentName: response_body_len
+          newName: "'network.received_bytes'"
+        - currentName: status_code
+          newName: "'network.http.response_code'"
+        - currentName: status_msg
+          newName: "'about.labels [status_msg]'"
+        - currentName: info_code
+          newName: "'about.labels [info_code]'"
+        - currentName: info_msg
+          newName: "'about.labels [info_msg]'"
+        - newName: "'about.labels [tags]'"
+          currentName: tags
+        - newName: "'principal.user.user_display_name'"
+          currentName: username
+        - newName: "'extensions.auth.auth_details'"
+          currentName: password
+        - newName: "'intermediary.hostname'"
+          currentName: proxied
+        - newName: "'about.labels [orig_fuid]'"
+          currentName: orig_fuids
+        - currentName: resp_fuids
+          newName: "'about.labels [resp_fuid]'"
+        - currentName: post_body
+          newName: "'about.labels [post_body]'"
+        - currentName: stream_id
+          newName: "'about.labels [stream_id]'"
+        - currentName: encoding
+          newName: "'about.labels [encoding]'"
+        - currentName: push
+          newName: "'about.labels [push]'"
+    groupId: CQPiez
+  - id: eval
+    filter: _path.startsWith('dns') || __e['@path'].startsWith('dns') ||
+      sourcetype.includes('dns')
+    disabled: false
+    conf:
+      add:
+        - disabled: false
+          name: "'metadata.event_type'"
+          value: "'NETWORK_DNS'"
+        - disabled: false
+          name: "'metadata.product_name'"
+          value: "'Zeek'"
+        - disabled: false
+          name: "'network.application_protocol'"
+          value: "'DNS'"
+    groupId: DochLT
+  - id: rename
+    filter: _path.startsWith('dns') || __e['@path'].startsWith('dns') ||
+      sourcetype.includes('dns')
+    disabled: false
+    conf:
+      wildcardDepth: 5
+      rename:
+        - currentName: proto
+          newName: "'network.ip_protocol'"
+        - currentName: trans_id
+          newName: "'network.dns.id'"
+        - currentName: rtt
+          newName: "'network.session_duration'"
+        - currentName: query
+          newName: "'network.dns.questions.name'"
+        - currentName: qclass
+          newName: "'network.dns.questions.class]'"
+        - newName: "'about.labels [qclass_name]'"
+          currentName: qclass_name
+        - currentName: qtype
+          newName: "'network.dns.questions.type'"
+        - currentName: qtype_name
+          newName: "'about.labels [qtype_name]'"
+        - currentName: rcode
+          newName: "'network.dns.response_code'"
+        - currentName: rcode_name
+          newName: "'about.labels [rcode_name]'"
+        - currentName: AA
+          newName: "'network.dns.authoritative\t'"
+        - newName: "'network.dns.truncated'"
+          currentName: TC
+        - currentName: RD
+          newName: "'network.dns.recursion_desired'"
+        - currentName: RA
+          newName: "'network.dns.recursion_available'"
+        - newName: "'about.labels [Z]'"
+          currentName: Z
+        - currentName: answers
+          newName: "'network.dns.answers.name'"
+        - currentName: TTLs
+          newName: "'network.dns.answers.ttl'"
+        - currentName: rejected
+          newName: "'network.dns.response'"
+        - currentName: is_trusted_domain
+          newName: "'about.labels [is_trusted_domain]'"
+        - currentName: icann_host_subdomain
+          newName: "'about.labels [icann_host_subdomain]'"
+        - currentName: icann_domain
+          newName: "'network.dns_domain'"
+        - currentName: icann_tld
+          newName: "'about.labels [icann_tld]'"
+        - currentName: num
+          newName: "'security_result.detection_fields [num]'"
+    groupId: DochLT
+  - id: eval
+    filter: _path.startsWith('files') || __e['@path'].startsWith('files') ||
+      sourcetype.includes('files')
+    disabled: false
+    conf:
+      add:
+        - disabled: false
+          name: "'metadata.event_type'"
+          value: "'NETWORK_UNCATEGORIZED'"
+        - disabled: false
+          name: "'metadata.product_name'"
+          value: "'Zeek'"
+    groupId: rshsja
+  - id: rename
+    filter: _path.startsWith('files') || __e['@path'].startsWith('files') ||
+      sourcetype.includes('files')
+    disabled: false
+    conf:
+      wildcardDepth: 5
+      rename:
+        - newName: "'about.labels [fuid]'"
+          currentName: fuid
+        - currentName: tx_hosts
+          newName: "'principal.ip'"
+        - currentName: rx_hosts
+          newName: "'target.ip'"
+        - currentName: conn_uids
+          newName: "'about.labels [conn_uid]'"
+        - newName: "'about.labels [source]'"
+          currentName: source
+        - currentName: depth
+          newName: "'about.labels [depth]'"
+        - currentName: analyzers
+          newName: "'about.labels [analyzer]'"
+        - newName: "'about.file.mime_type'"
+          currentName: mime_type
+        - currentName: filename
+          newName: "'about.file.names'"
+        - currentName: duration
+          newName: "'about.labels [duration]'"
+        - currentName: local_orig
+          newName: "'about.labels [local_orig]'"
+        - currentName: is_orig
+          newName: "'about.labels [is_orig]'"
+        - currentName: seen_bytes
+          newName: "'about.file.size'"
+        - currentName: total_bytes
+          newName: "'about.labels [total_bytes]'"
+        - currentName: missing_bytes
+          newName: "'about.labels [missing_bytes]'"
+        - currentName: overflow_bytes
+          newName: "'about.labels [overflow_bytes]'"
+        - currentName: timedout
+          newName: "'about.labels [timedout]'"
+        - currentName: parent_fuid
+          newName: "'about.labels [parent_fuid]'"
+        - currentName: md5
+          newName: "'about.file.md5'"
+        - currentName: sha1
+          newName: "'about.file.sha1'"
+        - newName: "'about.file.sha256'"
+          currentName: sha256
+        - currentName: extracted
+          newName: "'about.file.names'"
+        - currentName: extracted_cutoff
+          newName: "'about.labels [extracted_cutoff]'"
+        - currentName: extracted_size
+          newName: "'about.labels [extracted_size]'"
+        - newName: "'about.labels [num]'"
+          currentName: num
+    groupId: rshsja
+  - id: eval
+    filter: _path.startsWith('smb_files') || __e['@path'].startsWith('smb_files') ||
+      sourcetype.includes('smb_files')
+    disabled: false
+    conf:
+      add:
+        - disabled: false
+          name: "'metadata.event_type'"
+          value: "'NETWORK_UNCATEGORIZED'"
+        - disabled: false
+          name: "'metadata.product_name'"
+          value: "'Zeek'"
+        - disabled: false
+          name: "'network.application_protocol'"
+          value: "'SMB'"
+        - disabled: false
+          name: "'network.ip_protocol'"
+          value: "'TCP'"
+        - disabled: false
+          name: "'security_result.severity'"
+          value: "'INFORMATIONAL'"
+        - disabled: false
+          name: "'security_result.action'"
+          value: "'ALLOW'"
+        - disabled: false
+          name: "'metadata.event_type'"
+          value: C.Lookup(`CL_SMB_Files_Actions_Chronicle.csv`, `action`).match(action,
+            `UDM_Mapping`)
+        - disabled: false
+          name: "'metadata.description'"
+          value: "'action: '+action+' on: '+name"
+      remove: []
+    groupId: xFX2aZ
+  - id: rename
+    filter: _path.startsWith('smb_files') || __e['@path'].startsWith('smb_files') ||
+      sourcetype.includes('smb_files')
+    disabled: false
+    conf:
+      wildcardDepth: 5
+      rename:
+        - newName: "'about.labels [fuid]'"
+          currentName: fuid
+        - newName: "'target.labels [action]'"
+          currentName: action
+        - newName: "'target.file.full_path'"
+          currentName: path
+        - currentName: name
+          newName: "'target.file.names'"
+        - newName: "'target.file.size'"
+          currentName: size
+        - newName: "'src.file.names'"
+          currentName: prev_name
+        - currentName: "'times.modified'"
+          newName: "'target.file.last_modification_time'"
+        - currentName: "'times.accessed'"
+          newName: "'target.file.last_seen_time'"
+        - currentName: "'times.created'"
+          newName: "'target.file.first_seen_time'"
+        - currentName: "'times.changed'"
+          newName: "'target.labels [times_changed]'"
+        - currentName: data_offset_req
+          newName: "'target.labels [data_offset_req]'"
+        - currentName: data_len_req
+          newName: "'target.labels [data_len_req]'"
+        - currentName: data_len_rsp
+          newName: "'target.labels [data_len_rsp]'"
+    groupId: xFX2aZ
+  - id: eval
+    filter: _path.startsWith('smb_files') || __e['@path'].startsWith('smb_files') ||
+      sourcetype.includes('smb_files')
+    disabled: false
+    conf:
+      remove:
+        - __e['@path']
+        - _system_name
+        - _path
+        - "'severity.name'"
+        - "'severity.level'"
+        - _write_ts
+      keep: []
+    groupId: xFX2aZ
+  - id: eval
+    filter: _path.startsWith('smb_mapping') ||
+      __e['@path'].startsWith('smb_mapping') ||
+      sourcetype.includes('smb_mapping')
+    disabled: false
+    conf:
+      add:
+        - disabled: false
+          name: "'metadata.event_type'"
+          value: "'NETWORK_CONNECTION'"
+        - disabled: false
+          name: "'metadata.product_name'"
+          value: "'Zeek'"
+        - disabled: false
+          name: "'network.application_protocol'"
+          value: "'SMB'"
+        - disabled: false
+          name: "'network.ip_protocol'"
+          value: "'TCP'"
+        - disabled: false
+          name: "'security_result.severity'"
+          value: "'INFORMATIONAL'"
+        - disabled: false
+          name: "'security_result.action'"
+          value: "'ALLOW'"
+        - disabled: false
+          name: "'target.resource.resource_type\t'"
+          value: "(share_type=='DISK') ? 'STORAGE_OBJECT' : (share_type=='PIPE') ? 'PIPE'
+            : \"UNSPECIFIED\""
+      remove: []
+    groupId: CCfXiV
+  - id: rename
+    filter: _path.startsWith('smb_mapping') ||
+      __e['@path'].startsWith('smb_mapping') ||
+      sourcetype.includes('smb_mapping')
+    disabled: false
+    conf:
+      wildcardDepth: 5
+      rename:
+        - newName: "'target.resource.attribute.labels [path]'"
+          currentName: path
+        - newName: "'target.application'"
+          currentName: service
+        - newName: "'target.resource.attribute.labels [native_file_system]'"
+          currentName: native_file_system
+        - currentName: share_type
+          newName: "'target.resource.resource_subtype'"
+    groupId: CCfXiV
+  - id: eval
+    filter: _path.startsWith('smb_mapping') ||
+      __e['@path'].startsWith('smb_mapping') ||
+      sourcetype.includes('smb_mapping')
+    disabled: false
+    conf:
+      remove:
+        - __e['@path']
+        - _system_name
+        - _write_ts
+        - _path
+      keep: []
+    groupId: CCfXiV
+  - id: eval
+    filter: _path.startsWith('ssl') || __e['@path'].startsWith('ssl') ||
+      sourcetype.includes('ssl')
+    disabled: false
+    conf:
+      add:
+        - disabled: false
+          name: "'metadata.event_type'"
+          value: "'NETWORK_CONNECTION'"
+        - disabled: false
+          name: "'metadata.product_name'"
+          value: "'Zeek'"
+        - disabled: false
+          name: "'network.application_protocol'"
+          value: "'HTTP'"
+        - disabled: false
+          name: "'network.ip_protocol'"
+          value: "'TCP'"
+        - disabled: false
+          name: "'security_result.severity'"
+          value: "'INFORMATIONAL'"
+        - disabled: false
+          name: "'security_result.action'"
+          value: "'ALLOW'"
+      remove: []
+    groupId: Rglc2p
+  - id: rename
+    filter: _path.startsWith('ssl') || __e['@path'].startsWith('ssl') ||
+      sourcetype.includes('ssl')
+    disabled: false
+    conf:
+      wildcardDepth: 5
+      rename:
+        - currentName: version
+          newName: "'network.tls.version'"
+        - currentName: cipher
+          newName: "'network.tls.cipher'"
+        - currentName: curve
+          newName: "'network.tls.curve'"
+        - newName: "'network.tls.client.server_name'"
+          currentName: server_name
+        - newName: "'network.tls.resumed'"
+          currentName: resumed
+        - newName: "'security_result.description'"
+          currentName: last_alert
+        - newName: "'network.tls.next_protocol'"
+          currentName: next_protocol
+        - newName: "'network.tls.established'"
+          currentName: established
+        - newName: "'about.labels [ssl_history]'"
+          currentName: ssl_history
+        - newName: "'target.labels [cert_chain_fps]'"
+          currentName: cert_chain_fps
+        - newName: "'principal.labels [client_cert_chain_fps'"
+          currentName: client_cert_chain_fps
+        - newName: "'about.labels [sni_matches_cert]'"
+          currentName: sni_matches_cert
+        - newName: "'security_result.detection_fields [validation_status]'"
+          currentName: validation_status
+        - newName: "'network.tls.client.ja3'"
+          currentName: ja3
+        - currentName: ja3s
+          newName: "'network.tls.server.ja3s'"
+    groupId: Rglc2p
+  - id: eval
+    filter: _path.startsWith('ssh') || __e['@path'].startsWith('ssh') ||
+      sourcetype.includes('ssh')
+    disabled: false
+    conf:
+      add:
+        - disabled: false
+          name: "'metadata.event_type'"
+          value: "'NETWORK_UNCATEGORIZED'"
+        - disabled: false
+          name: "'metadata.product_name'"
+          value: "'Zeek'"
+        - disabled: false
+          name: "'network.application_protocol'"
+          value: "'SSH'"
+        - disabled: false
+          name: "'network.application_protocol_version'"
+          value: "(version > 0) ? __e['network.application_protocol'] + ' ' + version :
+            undefined"
+        - disabled: false
+          name: "'network.ip_protocol'"
+          value: "'TCP'"
+        - disabled: false
+          name: "'security_result.severity'"
+          value: "'INFORMATIONAL'"
+        - disabled: false
+          name: "'security_result.action'"
+          value: "(auth_success == true) ? 'ALLOW' : 'BLOCK'"
+        - disabled: false
+          name: "'extensions.auth.auth_details'"
+          value: "'auth_attempts: ' + auth_attempts"
+        - disabled: false
+          value: "remote_location.country_code || remote_location.region ?
+            (remote_location.country_code +': '+remote_location.region) :
+            undefined"
+          name: "'target.location.country_or_region'"
+        - disabled: false
+          value: C.Lookup(`CL_SSH_Interface_Chronicle.csv`, interfaces).match(`interface`,
+            'sec_r_summary', [])
+          name: security_result.summary
+      remove:
+        - version
+        - auth_attempts
+        - remote_location.country_code
+        - remote_location.region
+    groupId: 5I4Qph
+  - id: rename
+    filter: _path.startsWith('ssh') || __e['@path'].startsWith('ssh') ||
+      sourcetype.includes('ssh')
+    disabled: false
+    conf:
+      wildcardDepth: 5
+      rename:
+        - newName: "'security_result.action_details'"
+          currentName: auth_success
+        - newName: "'network.direction'"
+          currentName: direction
+        - newName: "'principal.application'"
+          currentName: client
+        - newName: "'target.application'"
+          currentName: server
+        - currentName: cipher_alg
+          newName: "'network.tls.cipher'"
+        - currentName: mac_alg
+          newName: "'security_result.detection_fields [mac_alg]'"
+        - currentName: compression_alg
+          newName: "'security_result.detection_fields [compression_alg]'"
+        - currentName: kex_alg
+          newName: "'security_result.detection_fields [kex_alg]'"
+        - currentName: host_key_alg
+          newName: "'security_result.detection_fields [host_key_alg]'"
+        - currentName: host_key
+          newName: "'security_result.detection_fields [host_key]'"
+        - newName: "'target.location.city'"
+          currentName: "'remote_location.city '"
+        - currentName: "'remote_location.latitude '"
+          newName: "'target.location.region_coordinates.latitude'"
+        - newName: "'about.labels [hassh_version]'"
+          currentName: hasshVersion
+        - newName: "'principal.labels [hassh]'"
+          currentName: hassh
+        - newName: "'about.labels [cshka]'"
+          currentName: cshka
+        - newName: "'about.labels [hassh_algorithms]'"
+          currentName: hasshAlgorithms
+        - newName: "'about.labels [sshka]'"
+          currentName: sshka
+        - newName: "'about.labels [hassh_server_algorithms]'"
+          currentName: hasshServerAlgorithms
+        - newName: "'target.labels [hassh_server]'"
+          currentName: hasshServer
+    groupId: 5I4Qph
+  - id: eval
+    filter: _path.startsWith('ssh') || __e['@path'].startsWith('ssh') ||
+      sourcetype.includes('ssh')
+    disabled: false
+    conf:
+      remove:
+        - __e['@path']
+        - _system_name
+        - _write_ts
+        - share_type
+        - _path
+      keep: []
+    groupId: 5I4Qph
+  - id: eval
+    filter: _path.startsWith('rdp') || __e['@path'].startsWith('rdp') ||
+      sourcetype.includes('rdp')
+    disabled: false
+    conf:
+      add:
+        - disabled: false
+          name: "'metadata.event_type'"
+          value: "'NETWORK_CONNECTION'"
+        - disabled: false
+          name: "'metadata.product_name'"
+          value: "'Zeek'"
+        - disabled: false
+          name: "'network.ip_protocol'"
+          value: "'TCP'"
+        - disabled: false
+          name: "'security_result.severity'"
+          value: "'INFORMATIONAL'"
+        - disabled: false
+          name: "'security_result.description'"
+          value: result + ' ' + "connection with security protocol " + security_protocol
+      remove: []
+    groupId: NS1B0C
+  - id: rename
+    filter: _path.startsWith('rdp') || __e['@path'].startsWith('rdp') ||
+      sourcetype.includes('rdp')
+    disabled: false
+    conf:
+      wildcardDepth: 5
+      rename:
+        - currentName: cookie
+          newName: "'about.labels [cookie]'"
+        - currentName: result
+          newName: "'about.labels [result]'"
+        - newName: "'target.labels'"
+          currentName: security_protocol
+        - newName: "'intermediary.labels [client_channels]'"
+          currentName: client_channels
+        - newName: "'principal.labels [keyboard_layout]'"
+          currentName: keyboard_layout
+        - newName: "'principal.labels [client_build]'"
+          currentName: client_build
+        - newName: "'principal.hostname'"
+          currentName: client_name
+        - newName: "'principal.labels [client_dig_product_id ]'"
+          currentName: client_dig_product_id
+        - newName: "'principal.labels [desktop_width]'"
+          currentName: desktop_width
+        - newName: "'principal.labels [desktop_height]'"
+          currentName: desktop_height
+        - newName: "'principal.labels [requested_color_depth]'"
+          currentName: requested_color_depth
+        - newName: "'about.labels [cert_type]'"
+          currentName: cert_type
+        - newName: "'about.labels [cert_count]'"
+          currentName: cert_count
+        - newName: "'about.labels [cert_permanent ]'"
+          currentName: cert_permanent
+        - newName: "'about.labels [encryption_level]'"
+          currentName: encryption_level
+        - newName: "'about.labels [encryption_method]'"
+          currentName: encryption_method
+        - newName: "'about.labels [auth_success]'"
+          currentName: auth_success
+        - newName: "'intermediary.labels [channels_joined'"
+          currentName: "channels_joined "
+        - newName: "'about.labels [inferences]'"
+          currentName: inferences
+        - newName: "'about.labels [rdpeudp_uid]'"
+          currentName: rdpeudp_uid
+        - newName: "'principal.labels [rdfp_string]'"
+          currentName: rdfp_string
+        - newName: "'principal.labels [rdfp_hash]'"
+          currentName: rdfp_hash
+    groupId: NS1B0C
+  - id: eval
+    filter: _path.startsWith('rdp') || __e['@path'].startsWith('rdp') ||
+      sourcetype.includes('rdp')
+    disabled: false
+    conf:
+      remove:
+        - __e['@path']
+        - _system_name
+        - _write_ts
+        - share_type
+        - _path
+      keep: []
+    groupId: NS1B0C
+  - id: eval
+    filter: _path.startsWith('dhcp') || __e['@path'].startsWith('dhcp') ||
+      sourcetype.includes('dhcp')
+    disabled: false
+    conf:
+      add:
+        - disabled: false
+          name: "'metadata.event_type'"
+          value: "'NETWORK_DHCP'"
+        - disabled: false
+          name: "'metadata.product_name'"
+          value: "'Zeek'"
+        - disabled: false
+          name: "'network.ip_protocol'"
+          value: "'TCP'"
+        - disabled: false
+          name: "'security_result.severity'"
+          value: "'INFORMATIONAL'"
+        - disabled: false
+          name: "'network.application_protocol'"
+          value: "'DHCP'"
+      remove: []
+    groupId: gzMFXH
+  - id: rename
+    filter: _path.startsWith('dhcp') || __e['@path'].startsWith('dhcp') ||
+      sourcetype.includes('dhcp')
+    disabled: false
+    conf:
+      wildcardDepth: 5
+      rename:
+        - newName: "'about.labels'"
+          currentName: uids
+        - newName: "'network.dhcp.ciaddr'"
+          currentName: client_addr
+        - newName: "'network.dhcp.siaddr'"
+          currentName: server_addr
+        - newName: "'network.dhcp.chaddr'"
+          currentName: mac
+        - newName: "'network.dhcp.client_hostname'"
+          currentName: host_name
+        - newName: "'principal.domain.name'"
+          currentName: client_fqdn
+        - newName: "'target.domain.name'"
+          currentName: domain
+        - newName: "'network.dhcp.requested_address'"
+          currentName: requested_addr
+        - newName: "'network.dhcp.yiaddr'"
+          currentName: assigned_addr
+        - newName: "'network.dhcp.lease_time_seconds'"
+          currentName: lease_time
+        - newName: "'security_result.description'"
+          currentName: server_message
+        - newName: "'network.dhcp.type'"
+          currentName: msg_types
+        - newName: "'about.labels [duration]'"
+          currentName: duration
+    groupId: gzMFXH
+  - id: eval
+    filter: _path.startsWith('dhcp') || __e['@path'].startsWith('dhcp') ||
+      sourcetype.includes('dhcp')
+    disabled: false
+    conf:
+      remove:
+        - __e['@path']
+        - _system_name
+        - _write_ts
+        - _path
+      keep: []
+    groupId: gzMFXH
+  - id: eval
+    filter: _path.startsWith('dnp3') || __e['@path'].startsWith('dnp3') ||
+      sourcetype.includes('dnp3')
+    disabled: false
+    conf:
+      add:
+        - disabled: false
+          name: "'metadata.event_type'"
+          value: "'NETWORK_UNCATEGORIZED'"
+        - disabled: false
+          name: "'metadata.product_name'"
+          value: "'Zeek'"
+        - disabled: false
+          name: "'intermediary.resource.resource_type'"
+          value: 'named_pipe.lenght > 0 ? "PIPE" : "TEST"'
+      remove: []
+    groupId: E4vvls
+  - id: rename
+    filter: _path.startsWith('dnp3') || __e['@path'].startsWith('dnp3') ||
+      sourcetype.includes('dnp3')
+    disabled: false
+    conf:
+      wildcardDepth: 5
+      rename:
+        - currentName: fc_request
+          newName: "'about.labels [fc_request]'"
+        - currentName: fc_reply
+          newName: "'about.labels [fc_reply]'"
+        - newName: "'about.labels [iin]'"
+          currentName: iin
+    groupId: E4vvls
+  - id: eval
+    filter: _path.startsWith('dnp3') || __e['@path'].startsWith('dnp3') ||
+      sourcetype.includes('dnp3')
+    disabled: false
+    conf:
+      remove:
+        - __e['@path']
+        - _system_name
+        - _write_ts
+        - _path
+      keep: []
+    groupId: E4vvls
+  - id: eval
+    filter: _path.startsWith('dce_rpc') || __e['@path'].startsWith('dce_rpc') ||
+      sourcetype.includes('dce_rpc')
+    disabled: false
+    conf:
+      add:
+        - disabled: false
+          name: "'metadata.event_type'"
+          value: "'NETWORK_CONNECTION'"
+        - disabled: false
+          name: "'metadata.product_name'"
+          value: "'Zeek'"
+        - disabled: false
+          name: "'intermediary.resource.resource_type'"
+          value: 'named_pipe ? "PIPE" : undefined'
+        - disabled: false
+          name: "'network.application_protocol'"
+          value: "'DCERPC'"
+        - disabled: false
+          name: "'security_result.severity'"
+          value: "'INFORMATIONAL'"
+        - disabled: false
+          name: "'network.ip_protocol'"
+          value: "'TCP'"
+        - disabled: false
+          name: "'metadata.description'"
+          value: '"operation " + operation + " on " + endpoint + " using named pipe " +
+            named_pipe'
+      remove:
+        - named_pipe
+    groupId: rIEzjZ
+  - id: rename
+    filter: _path.startsWith('dce_rpc') || __e['@path'].startsWith('dce_rpc') ||
+      sourcetype.includes('dce_rpc')
+    disabled: false
+    conf:
+      wildcardDepth: 5
+      rename:
+        - newName: "'target.labels [endpoint]'"
+          currentName: endpoint
+        - newName: "'target.labels [operation]'"
+          currentName: operation
+    groupId: rIEzjZ
+  - id: eval
+    filter: _path.startsWith('dce_rpc') || __e['@path'].startsWith('dce_rpc') ||
+      sourcetype.includes('dce_rpc')
+    disabled: false
+    conf:
+      remove:
+        - __e['@path']
+        - _system_name
+        - _write_ts
+        - _path
+        - "'severity.level'"
+        - sourcetype
+        - index
+      keep: []
+    groupId: rIEzjZ
+  - id: eval
+    filter: _path.startsWith('kerberos') || __e['@path'].startsWith('kerberos') ||
+      sourcetype.includes('kerberos')
+    disabled: false
+    conf:
+      add:
+        - disabled: false
+          name: "'metadata.event_type'"
+          value: "'NETWORK_UNCATEGORIZED'"
+        - disabled: false
+          name: "'metadata.product_name'"
+          value: "'Zeek'"
+        - disabled: false
+          name: "'network.application_protocol'"
+          value: "'KRB5'"
+        - disabled: false
+          value: "(success == true) ? 'ALLOW' : 'FAIL'"
+          name: "'security_result.action'"
+      remove: []
+    groupId: mmMLQR
+  - id: rename
+    filter: _path.startsWith('kerberos') || __e['@path'].startsWith('kerberos') ||
+      sourcetype.includes('kerberos')
+    disabled: false
+    conf:
+      wildcardDepth: 5
+      rename:
+        - currentName: request_type
+          newName: "'principal.application'"
+        - currentName: client
+          newName: "'principal.hostname'"
+        - newName: "'target.application'"
+          currentName: service
+        - newName: "'security_result.action_details'"
+          currentName: error_msg
+        - newName: "'about.labels [from]'"
+          currentName: from
+        - newName: "'about.labels [till]'"
+          currentName: till
+        - newName: "'about.labels [cipher]'"
+          currentName: cipher
+        - newName: "'about.labels [forwardable]'"
+          currentName: forwardable
+        - newName: "'about.labels [renewable]'"
+          currentName: renewable
+        - newName: "'about.labels [client_cert_subject]'"
+          currentName: client_cert_subject
+        - newName: "'about.labels [client_cert_fuid]'"
+          currentName: client_cert_fuid
+        - newName: "'about.labels [server_cert_subject]'"
+          currentName: server_cert_subject
+        - newName: "'about.labels [server_cert_fuid]'"
+          currentName: server_cert_fuid
+    groupId: mmMLQR
+  - id: eval
+    filter: _path.startsWith('kerberos') || __e['@path'].startsWith('kerberos') ||
+      sourcetype.includes('kerberos')
+    disabled: false
+    conf:
+      remove:
+        - __e['@path']
+        - _system_name
+        - _write_ts
+        - _path
+      keep: []
+    groupId: mmMLQR
+  - id: eval
+    filter: _path.startsWith('ldap') || __e['@path'].startsWith('ldap') ||
+      sourcetype.includes('ldap')
+    disabled: false
+    conf:
+      add:
+        - disabled: false
+          name: "'metadata.event_type'"
+          value: "'NETWORK_UNCATEGORIZED'"
+        - disabled: false
+          name: "'metadata.product_name'"
+          value: "'Zeek'"
+        - disabled: false
+          name: "'network.application_protocol'"
+          value: "'LDAP'"
+      remove: []
+    groupId: Xaoj0H
+  - id: rename
+    filter: _path.startsWith('ldap') || __e['@path'].startsWith('ldap') ||
+      sourcetype.includes('ldap')
+    disabled: false
+    conf:
+      wildcardDepth: 5
+      rename:
+        - currentName: proto
+          newName: "'about.labels [proto]'"
+        - currentName: message_id
+          newName: "'about.labels [message_id]'"
+        - newName: "'network.application_protocol_version'"
+          currentName: version
+        - newName: "'security_result.detection_fields [opcode]'"
+          currentName: opcode
+        - newName: "'security_result.detection_fields [result]'"
+          currentName: result
+        - newName: "'about.labels [object]'"
+          currentName: object
+        - newName: "'about.labels [argument]'"
+          currentName: argument
+    groupId: Xaoj0H
+  - id: eval
+    filter: _path.startsWith('ldap') || __e['@path'].startsWith('ldap') ||
+      sourcetype.includes('ldap')
+    disabled: false
+    conf:
+      remove:
+        - __e['@path']
+        - _system_name
+        - _write_ts
+        - _path
+      keep: []
+    groupId: Xaoj0H
+  - id: eval
+    filter: _path.startsWith('ldap_search') ||
+      __e['@path'].startsWith('ldap_search') ||
+      sourcetype.includes('ldap_search')
+    disabled: false
+    conf:
+      add:
+        - disabled: false
+          name: "'metadata.event_type'"
+          value: "'NETWORK_UNCATEGORIZED'"
+        - disabled: false
+          name: "'metadata.product_name'"
+          value: "'Zeek'"
+        - disabled: false
+          name: "'network.application_protocol'"
+          value: "'LDAP'"
+      remove: []
+    groupId: 1DyNtY
+  - id: rename
+    filter: _path.startsWith('ldap_search') ||
+      __e['@path'].startsWith('ldap_search') ||
+      sourcetype.includes('ldap_search')
+    disabled: false
+    conf:
+      wildcardDepth: 5
+      rename:
+        - currentName: proto
+          newName: "'about.labels [proto]'"
+        - currentName: message_id
+          newName: "'about.labels [message_id]'"
+        - newName: "'security_result.detection_fields [opcode]'"
+          currentName: opcode
+        - newName: "'security_result.detection_fields [result]'"
+          currentName: result
+        - newName: "'about.labels [scope]'"
+          currentName: scope
+        - newName: "'about.labels [deref]'"
+          currentName: deref
+        - newName: "'about.labels [base_object]'"
+          currentName: base_object
+        - newName: "'security_result.detection_fields [result_count]'"
+          currentName: result_count
+        - newName: "'security_result.detection_fields [result]'"
+          currentName: result
+        - newName: "'security_result.description'"
+          currentName: diagnostic_message
+        - newName: "'about.labels [filter]'"
+          currentName: filter
+        - newName: "'about.labels [attributes]'"
+          currentName: attributes
+    groupId: 1DyNtY
+  - id: eval
+    filter: _path.startsWith('ldap_search') ||
+      __e['@path'].startsWith('ldap_search') ||
+      sourcetype.includes('ldap_search')
+    disabled: false
+    conf:
+      remove:
+        - __e['@path']
+        - _system_name
+        - _write_ts
+        - _path
+      keep: []
+    groupId: 1DyNtY
+  - id: eval
+    filter: _path.startsWith('syslog') || __e['@path'].startsWith('syslog') ||
+      sourcetype.includes('syslog')
+    disabled: false
+    conf:
+      add:
+        - disabled: false
+          name: "'metadata.event_type'"
+          value: "'STATUS_UPDATE'"
+        - disabled: false
+          name: "'metadata.product_name'"
+          value: "'Zeek'"
+      remove: []
+    groupId: MIHarc
+  - id: rename
+    filter: _path.startsWith('syslog') || __e['@path'].startsWith('syslog') ||
+      sourcetype.includes('syslog')
+    disabled: false
+    conf:
+      wildcardDepth: 5
+      rename:
+        - currentName: proto
+          newName: "'network.ip_protocol'"
+        - currentName: facility
+          newName: "'about.labels [facility]'"
+        - newName: "'about.labels [severity]'"
+          currentName: severity
+        - newName: "'metadata.description'"
+          currentName: message
+    groupId: MIHarc
+  - id: eval
+    filter: _path.startsWith('syslog') || __e['@path'].startsWith('syslog') ||
+      sourcetype.includes('syslog')
+    disabled: false
+    conf:
+      remove:
+        - __e['@path']
+        - _system_name
+        - _write_ts
+        - _path
+      keep: []
+    groupId: MIHarc
+  - id: eval
+    filter: _path.startsWith('weird') || __e['@path'].startsWith('weird') ||
+      sourcetype.includes('weird')
+    disabled: false
+    conf:
+      add:
+        - disabled: false
+          name: "'metadata.event_type'"
+          value: "'NETWORK_UNCATEGORIZED'"
+        - disabled: false
+          name: "'metadata.product_name'"
+          value: "'Zeek'"
+      remove: []
+    groupId: g3lK8S
+  - id: rename
+    filter: _path.startsWith('weird') || __e['@path'].startsWith('weird') ||
+      sourcetype.includes('weird')
+    disabled: false
+    conf:
+      wildcardDepth: 5
+      rename:
+        - currentName: name
+          newName: "'about.labels [name]'"
+        - currentName: addl
+          newName: "'about.labels [addl]'"
+        - newName: "'about.labels [notice]'"
+          currentName: notice
+        - newName: "'about.labels [source]'"
+          currentName: source
+        - newName: "'about.labels [peer]'"
+          currentName: peer
+    groupId: g3lK8S
+  - id: eval
+    filter: _path.startsWith('weird') || __e['@path'].startsWith('weird') ||
+      sourcetype.includes('weird')
+    disabled: false
+    conf:
+      remove:
+        - __e['@path']
+        - _system_name
+        - _write_ts
+        - _path
+      keep: []
+    groupId: g3lK8S
+  - id: eval
+    filter: _path.startsWith('x509') || __e['@path'].startsWith('x509') ||
+      sourcetype.includes('x509')
+    disabled: false
+    conf:
+      add:
+        - disabled: false
+          name: "'metadata.event_type'"
+          value: "'GENERIC_EVENT'"
+        - disabled: false
+          name: "'metadata.product_name'"
+          value: "'Zeek'"
+      remove: []
+    groupId: X34KxR
+  - id: rename
+    filter: _path.startsWith('x509') || __e['@path'].startsWith('x509') ||
+      sourcetype.includes('x509')
+    disabled: false
+    conf:
+      wildcardDepth: 5
+      rename:
+        - currentName: fingerprint
+          newName: "'about.labels [fingerprint]'"
+        - currentName: "'certificate.version'"
+          newName: "'network.tls.server.certificate.version'"
+        - newName: "'network.tls.server.certificate.serial'"
+          currentName: "'certificate.serial'"
+        - newName: "'network.tls.server.certificate.subject'"
+          currentName: "'certificate.subject'"
+        - newName: "'network.tls.server.certificate.issuer'"
+          currentName: "'certificate.issuer'"
+        - newName: "'network.tls.server.certificate.not_before'"
+          currentName: "'certificate.not_valid_before'"
+        - newName: "'network.tls.server.certificate.not_after'"
+          currentName: "'certificate.not_valid_after'"
+        - newName: "'about.labels [certificate_key_alg]'"
+          currentName: "'certificate.key_alg'"
+        - newName: "'about.labels [certificate_sig_alg]'"
+          currentName: "'certificate.sig_alg'"
+        - newName: "'about.labels [certificate_key_type]'"
+          currentName: "'certificate.key_type'"
+        - newName: "'about.labels [certificate_key_length]'"
+          currentName: "'certificate.key_length'"
+        - newName: "'about.labels [certificate_exponent]'"
+          currentName: "'certificate.exponent'"
+        - newName: "'network.tls.curve'"
+          currentName: "'certificate.curve'"
+        - newName: "'about.labels [san_dns]'"
+          currentName: "'san.dns'"
+        - newName: "'about.url'"
+          currentName: "'san.uri'"
+        - newName: "'about.labels [san_email]'"
+          currentName: "'san.email'"
+        - newName: "'about.ip'"
+          currentName: "'san.ip'"
+        - newName: "'about.labels [basic_constraints_ca]'"
+          currentName: "'basic_constraints.ca'"
+        - newName: "'about.labels [basic_constraints_path_len'"
+          currentName: "'basic_constraints.path_len'"
+        - newName: "'about.labels [host_cert]'"
+          currentName: "host_cert "
+        - currentName: client_cert
+          newName: "'about.labels [client_cert]'"
+    groupId: X34KxR
+  - id: eval
+    filter: _path.startsWith('x509') || __e['@path'].startsWith('x509') ||
+      sourcetype.includes('x509')
+    disabled: false
+    conf:
+      remove:
+        - __e['@path']
+        - _system_name
+        - _write_ts
+        - _path
+      keep: []
+    groupId: X34KxR
+  - id: eval
+    filter: _path.startsWith('radius') || __e['@path'].startsWith('radius') ||
+      sourcetype.includes('radius')
+    disabled: false
+    conf:
+      add:
+        - disabled: false
+          name: "'metadata.event_type'"
+          value: "'USER_LOGIN'"
+        - disabled: false
+          name: "'metadata.product_name'"
+          value: "'Zeek'"
+        - disabled: false
+          name: "'intermediary.ip'"
+          value: "(!tunnel_client.match(intermediary.ip)) ? tunnel_client : undefined"
+        - disabled: false
+          name: "'intermediary.domain.name'"
+          value: "(!tunnel_client.match(intermediary.ip)) ? tunnel_client : undefined"
+      remove: []
+    groupId: fRy2vY
+  - id: rename
+    filter: _path.startsWith('radius') || __e['@path'].startsWith('radius') ||
+      sourcetype.includes('radius')
+    disabled: false
+    conf:
+      wildcardDepth: 5
+      rename:
+        - currentName: username
+          newName: "'target.user.userid'"
+        - currentName: mac
+          newName: "'principal.mac'"
+        - newName: "'intermediary.ip'"
+          currentName: framed_addr
+        - newName: "'about.labels [connect_info]'"
+          currentName: connect_info
+        - newName: "'about.labels [reply_msg]'"
+          currentName: reply_msg
+        - newName: "'extensions.auth.auth_details'"
+          currentName: result
+        - newName: "'network.session_duration'"
+          currentName: ttl
+    groupId: fRy2vY
+  - id: eval
+    filter: _path.startsWith('radius') || __e['@path'].startsWith('radius') ||
+      sourcetype.includes('radius')
+    disabled: false
+    conf:
+      remove:
+        - __e['@path']
+        - _system_name
+        - _write_ts
+        - _path
+      keep: []
+    groupId: fRy2vY
+  - id: eval
+    filter: _path.startsWith('ntlm') || __e['@path'].startsWith('ntlm') ||
+      sourcetype.includes('ntlm')
+    disabled: false
+    conf:
+      add:
+        - disabled: false
+          name: "'metadata.event_type'"
+          value: "'USER_LOGIN'"
+        - disabled: false
+          name: "'metadata.product_name'"
+          value: "'Zeek'"
+        - disabled: false
+          name: "'extensions.auth.auth_details'"
+          value: '(success == true) ? "Authentication successful" : "Authentication
+            failed"'
+      remove: []
+    groupId: LfDAAA
+  - id: rename
+    filter: _path.startsWith('ntlm') || __e['@path'].startsWith('ntlm') ||
+      sourcetype.includes('ntlm')
+    disabled: false
+    conf:
+      wildcardDepth: 5
+      rename:
+        - currentName: username
+          newName: "'target.user.userid'"
+        - newName: "'principal.hostname'"
+          currentName: hostname
+        - newName: "'principal.domain.name'"
+          currentName: domainname
+        - newName: "'target.hostname'"
+          currentName: server_nb_computer_name
+        - newName: "'target.domain.name'"
+          currentName: server_dns_computer_name
+        - newName: "'target.labels [server_tree_name]'"
+          currentName: server_tree_name
+    groupId: LfDAAA
+  - id: eval
+    filter: _path.startsWith('ntlm') || __e['@path'].startsWith('ntlm') ||
+      sourcetype.includes('ntlm')
+    disabled: false
+    conf:
+      remove:
+        - __e['@path']
+        - _system_name
+        - _write_ts
+        - _path
+      keep: []
+    groupId: LfDAAA
+  - id: eval
+    filter: _path.startsWith('ntp') || __e['@path'].startsWith('ntp') ||
+      sourcetype.includes('ntp')
+    disabled: false
+    conf:
+      add:
+        - disabled: false
+          name: "'metadata.event_type'"
+          value: "'NETWORK_UNCATEGORIZED'"
+        - disabled: false
+          name: "'metadata.product_name'"
+          value: "'Zeek'"
+        - disabled: false
+          name: "'network.ip_protocol'"
+          value: "'UDP'"
+        - disabled: false
+          name: "'network.application_protocol'"
+          value: "'NTP'"
+        - disabled: false
+          name: "'target.labels'"
+          value: "(!ref_id.match(target.ip)) ? ref_id : undefined"
+        - disabled: false
+          name: "'target.labels [ref_id]'"
+          value: "(!ref_id.match(target.ip)) ? ref_id : undefined"
+      remove:
+        - ref_id
+    groupId: xEmrIU
+  - id: rename
+    filter: _path.startsWith('ntp') || __e['@path'].startsWith('ntp') ||
+      sourcetype.includes('ntp')
+    disabled: false
+    conf:
+      wildcardDepth: 5
+      rename:
+        - currentName: version
+          newName: "'network.application_protocol_version'"
+        - currentName: mode
+          newName: "'about.labels [mode]'"
+        - newName: "'about.labels [stratum]'"
+          currentName: stratum
+        - newName: "'about.labels [poll]'"
+          currentName: poll
+        - newName: "'about.labels [precision]'"
+          currentName: precision
+        - newName: "'about.labels [root_delay]'"
+          currentName: root_delay
+        - newName: "'about.labels [root_disp]'"
+          currentName: root_disp
+        - newName: "'about.labels [ref_time]'"
+          currentName: ref_time
+        - newName: "'about.labels [org_time]'"
+          currentName: org_time
+        - newName: "'about.labels [rec_time]'"
+          currentName: rec_time
+        - newName: "'about.labels [num_exts]'"
+          currentName: num_exts
+    groupId: xEmrIU
+  - id: eval
+    filter: _path.startsWith('ntp') || __e['@path'].startsWith('ntp') ||
+      sourcetype.includes('ntp')
+    disabled: false
+    conf:
+      remove:
+        - __e['@path']
+        - _system_name
+        - _write_ts
+        - _path
+      keep: []
+    groupId: xEmrIU
+  - id: eval
+    filter: _path.startsWith('suricata_corelight') ||
+      __e['@path'].startsWith('suricata_corelight') ||
+      sourcetype.includes('suricata_corelight')
+    disabled: false
+    conf:
+      add:
+        - disabled: false
+          name: "'metadata.event_type'"
+          value: "'SCAN_NETWORK'"
+        - disabled: false
+          name: "'metadata.product_name'"
+          value: "'Suricata'"
+        - disabled: false
+          name: idm.is_alert
+          value: "true"
+        - disabled: false
+          name: idm.is_significant
+          value: "true"
+        - disabled: false
+          name: "'security_result.severity'"
+          value: "'INFORMATIONAL'"
+      remove: []
+    groupId: L5A9Vc
+  - id: rename
+    filter: _path.startsWith('suricata_corelight') ||
+      __e['@path'].startsWith('suricata_corelight') ||
+      sourcetype.includes('suricata_corelight')
+    disabled: false
+    conf:
+      wildcardDepth: 5
+      rename:
+        - newName: "'intermediary.labels [id_vlan]'"
+          currentName: "'id.vlan'"
+        - newName: "'intermediary.labels [id_vlan_inner]'"
+          currentName: "'id.vlan_inner'"
+        - newName: "'about.labels [icmp_type]'"
+          currentName: icmp_type
+        - newName: "'about.labels [icmp_code]'"
+          currentName: icmp_code
+        - newName: "'metadata.product_log_id'"
+          currentName: suri_id
+        - newName: "'network.application_protocol'"
+          currentName: service
+        - newName: "'network.session_id'"
+          currentName: flow_id
+        - newName: "'about.labels [tx_id]'"
+          currentName: tx_id
+        - newName: "'about.labels [pcap_cnt]'"
+          currentName: pcap_cnt
+        - newName: "'security_result.action_details'"
+          currentName: "'alert.action'"
+        - newName: "'security_result.detection_fields [alert_gid]'"
+          currentName: "'alert.gid'"
+        - newName: "'security_result.rule_id'"
+          currentName: "'alert.signature_id'"
+        - newName: "'security_result.detection_fields [alert_rev]'"
+          currentName: "'alert.rev'"
+        - newName: "'security_result.summary'"
+          currentName: "'alert.signature'"
+        - newName: "'security_result.category_details'"
+          currentName: "'alert.category'"
+        - currentName: "'alert.severity'"
+          newName: "'security_result.severity_details'"
+        - newName: "'security_result.detection_fields [alert_metadata]'"
+          currentName: "'alert.metadata'"
+        - newName: "'network.community_id'"
+          currentName: community_id
+        - newName: "'about.labels [payload]'"
+          currentName: "payload "
+        - newName: "'about.labels [packet]'"
+          currentName: packet
+        - newName: "'security_result.detection_fields [metadata]'"
+          currentName: metadata
+        - newName: "'extensions.vulns.vulnerabilities.cve_id'"
+          currentName: orig_cve
+        - currentName: resp_cve
+          newName: "'extensions.vulns.vulnerabilities.cve_id'"
+        - newName: "'principal.asset.vulnerabilities.cve_id'"
+          currentName: "'orig_vulnerable_host.cve'"
+        - newName: "'principal.asset.hostname'"
+          currentName: "'orig_vulnerable_host.hostname'"
+        - newName: "'about.labels [orig_vulnerable_host_uid]'"
+          currentName: "'orig_vulnerable_host.host_uid'"
+        - newName: "'principal.asset.network_domain'"
+          currentName: "'orig_vulnerable_host.machine_domain'"
+        - newName: "'principal.asset.platform_software.platform_version'"
+          currentName: "'orig_vulnerable_host.os_version'"
+        - newName: "'principal.asset.vulnerabilities.cve_description'"
+          currentName: "'orig_vulnerable_host.source'"
+        - newName: "'target.asset.vulnerabilities.cve_id'"
+          currentName: "'resp_vulnerable_host.cve'"
+        - newName: "'target.asset.hostname'"
+          currentName: "'resp_vulnerable_host.hostname'"
+        - newName: "'about.labels [resp_vulnerable_host_uid]'"
+          currentName: "'resp_vulnerable_host.host_uid'"
+        - newName: "'about.labels [resp_vulnerable_host_uid]'"
+          currentName: "'resp_vulnerable_host.host_uid'"
+        - newName: "'target.asset.network_domain'"
+          currentName: "'resp_vulnerable_host.machine_domain'"
+        - newName: "'target.asset.platform_software.platform_version'"
+          currentName: "'resp_vulnerable_host.os_version'"
+        - newName: "'target.asset.vulnerabilities.cve_description'"
+          currentName: "'resp_vulnerable_host.source'"
+    groupId: L5A9Vc
+  - id: eval
+    filter: _path.startsWith('suricata_corelight') ||
+      __e['@path'].startsWith('suricata_corelight') ||
+      sourcetype.includes('suricata_corelight')
+    disabled: false
+    conf:
+      remove:
+        - cribl_*
+        - __e['@path']
+        - _system_name
+        - _write_ts
+        - _path
+        - _time
+      keep: []
+    groupId: L5A9Vc
+  - id: eval
+    filter: _path.startsWith('intel') || __e['@path'].startsWith('intel') ||
+      sourcetype.includes('intel')
+    disabled: false
+    conf:
+      add:
+        - disabled: false
+          name: "'metadata.event_type'"
+          value: "'SCAN_NETWORK'"
+        - disabled: false
+          name: "'metadata.product_name'"
+          value: "'Zeek'"
+        - disabled: false
+          name: "'metadata.entity_type'"
+          value: C.Lookup('CL_Intel_Chronicle.csv',
+            'seen_indicator_type').match(__e['seen.indicator_type'],'metadata_entity_type')
+            || "RESOURCE"
+        - disabled: false
+          name: "'entity.ip\t'"
+          value: "__e['seen.indicator_type'] == \"Intel::ADDR\" ? __e['seen.indicator'] :
+            undefined"
+        - disabled: false
+          name: "'entity.url'"
+          value: "__e['seen.indicator_type'] == \"Intel::URL\" ? __e['seen.indicator'] :
+            undefined"
+        - disabled: false
+          name: "'entity.domain.name'"
+          value: "__e['seen.indicator_type'] == \"Intel::DOMAIN\" ? __e['seen.indicator']
+            : undefined"
+        - disabled: false
+          name: "'entity.user.email_address'"
+          value: "(__e['seen.indicator_type'] == \"Intel::USER_NAME\" ||
+            __e['seen.indicator_type'] == \"Intel::EMAIL\") ?
+            __e['seen.indicator'] : undefined"
+        - disabled: false
+          name: "'entity.file.full_path'"
+          value: "(__e['seen.indicator_type'] == \"Intel::FILE_HASH\" ||
+            __e['seen.indicator_type'] == \"Intel::FILE_HASH\") ?
+            __e['seen.indicator'] : undefined"
+        - disabled: false
+          name: "'entity.resource.name'"
+          value: "__e['metadata.entity_type'] == \"RESOURCE\" ? __e['seen.indicator'] :
+            undefined"
+        - disabled: false
+          name: "'entity.resource.resource_name'"
+          value: "__e['seen.indicator_type'] == \"Intel::SUBNET\" ? \"VPC_NETWORK\" :
+            undefined"
+        - disabled: false
+          name: "'entity.resource.resource_sub_type'"
+          value: "__e['metadata.entity_type'] == \"RESOURCE\" ?
+            __e['seen.indicatior_type'] : undefined"
+      remove: []
+    groupId: tE6Iwu
+  - id: rename
+    filter: _path.startsWith('intel') || __e['@path'].startsWith('intel') ||
+      sourcetype.includes('intel')
+    disabled: false
+    conf:
+      wildcardDepth: 5
+      rename:
+        - currentName: "'seen.where'"
+          newName: "'entity.metadata.source_labels [seen_where]'"
+        - newName: "'entity.labels [matched]'"
+          currentName: matched
+        - newName: "'entity.metadata.source_labels [source]'"
+          currentName: sources
+        - newName: "'about.labels [fuid]'"
+          currentName: fuid
+        - newName: "'entity.file.mime_type'"
+          currentName: file_mime_type
+        - newName: "'metadata.threat.detection_fields [file_desc]'"
+          currentName: file_desc
+        - newName: "'ioc.description'"
+          currentName: desc
+        - newName: "'metadata.threat.url_back_to_product'"
+          currentName: url
+        - newName: "'ioc.confidence_score'"
+          currentName: confidence
+        - newName: "'ioc.active_timerange.start'"
+          currentName: firstseen
+        - newName: "'ioc.active_timerange.end'"
+          currentName: lastseen
+        - newName: "'entity.labels [associated]'"
+          currentName: associated
+        - newName: "'ioc.categorization'"
+          currentName: category
+        - newName: "'entity.labels [campaign]'"
+          currentName: campaigns
+        - newName: "'entity.labels [report]'"
+          currentName: reports
+    groupId: tE6Iwu
+  - id: eval
+    filter: _path.startsWith('intel') || __e['@path'].startsWith('intel') ||
+      sourcetype.includes('intel')
+    disabled: false
+    conf:
+      remove:
+        - __e['@path']
+        - _system_name
+        - _write_ts
+        - _path
+        - "'severity.level'"
+        - "'severity.name'"
+        - "'seen.indicator'"
+        - "'seen.indicator_type'"
+      keep: []
+    groupId: tE6Iwu
+  - id: eval
+    filter: _path.startsWith('notice') || __e['@path'].startsWith('notice') ||
+      sourcetype.includes('notice')
+    disabled: false
+    conf:
+      add:
+        - disabled: false
+          name: "'metadata.event_type'"
+          value: "'NETWORK_UNCATEGORIZED'"
+        - disabled: false
+          name: "'metadata.product_name'"
+          value: "'Zeek'"
+        - disabled: false
+          name: "'security_result.action'"
+          value: "'ALLOW'"
+        - disabled: false
+          value: "remote_location.country_code || remote_location.region ?
+            (remote_location.country_code +': '+remote_location.region) :
+            undefined"
+          name: "'about.location.country_or_region'"
+        - disabled: false
+          name: "'security_result.severity'"
+          value: "'INFORMATIONAL'"
+      remove:
+        - remote_location.country_code
+        - remote_location.region
+    groupId: VXb7m3
+  - id: rename
+    filter: _path.startsWith('notice') || __e['@path'].startsWith('notice') ||
+      sourcetype.includes('notice')
+    disabled: false
+    conf:
+      wildcardDepth: 5
+      rename:
+        - currentName: fuid
+          newName: "'about.labels [fuid]'"
+        - currentName: file_mime_type
+          newName: "'target.file.mime_type'"
+        - newName: "'about.labels [file_desc]'"
+          currentName: file_desc
+        - newName: "'network.ip_protocol'"
+          currentName: proto
+        - newName: "'security_result.description'"
+          currentName: note
+        - newName: "'metadata.description'"
+          currentName: msg
+        - newName: "'about.labels [sub]'"
+          currentName: sub
+        - newName: "'principal.ip'"
+          currentName: src
+        - newName: "'target.ip'"
+          currentName: dst
+        - newName: "'about.port'"
+          currentName: p
+        - newName: "'about.labels [n]'"
+          currentName: n
+        - newName: "'about.labels [peer_descr]'"
+          currentName: peer_descr
+        - newName: "'security_result.action_details'"
+          currentName: actions
+        - newName: "'about.labels [suppress_for]'"
+          currentName: suppress_for
+        - currentName: remote_location.city
+          newName: "'about.location.city'"
+        - newName: "'about.location.region_coordinates.latitude'"
+          currentName: remote_location.latitude
+        - currentName: remote_location.longitude
+          newName: "'about.location.region_coordinates.longitud'"
+    groupId: VXb7m3
+  - id: eval
+    filter: _path.startsWith('notice') || __e['@path'].startsWith('notice') ||
+      sourcetype.includes('notice')
+    disabled: false
+    conf:
+      remove:
+        - __e['@path']
+        - _system_name
+        - _write_ts
+        - _path
+        - "'severity.level'"
+        - "'severity.name'"
+      keep: []
+    groupId: VXb7m3
+  - id: eval
+    filter: "true"
+    disabled: false
+    conf:
+      remove:
+        - __e['@path']
+        - _path
+        - cribl_*
+        - __e[`@timestamp`]
+        - __e[`@sensor`]
+        - _time
+        - _write_ts
+        - _system_name
+        - _raw
+        - index
+        - sourcetype

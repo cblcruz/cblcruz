@@ -1,0 +1,778 @@
+output: default
+streamtags: []
+groups:
+  tFx6qm:
+    name: Parse & Trim
+    description: Parse data and remove fields that are not desired for sending to
+      destination
+    index: 1
+  VkMNFH:
+    name: Enrichment
+    index: 2
+    description: Enrichment functions - ja3 fingerprints lookup validation
+    disabled: false
+  TF26s0:
+    name: Reduction
+    index: 3
+    disabled: false
+    description: Basic reduction functions
+  Yuqpin:
+    name: UID field addition to an existing Redis database for correlation
+    index: 5
+    disabled: true
+    description: Uses a Redis server to keep a stateful list of events that have a
+      matching UID across all ingested log-types
+  OsZelk:
+    name: Splunk  Common Information Module (CIM)
+    description: Splunk CIM based on the Certificates Data Model
+    index: 7
+    disabled: true
+  Lala0x:
+    name: Elastic Common Schema (ECS)
+    description: Elasticsearch ECS normalization for SSL data
+    index: 8
+    disabled: true
+  sBOKW6:
+    name: MS Sentinel mappings
+    description: Mapping to MS Sentinel Fields - Sentinel name, Asim & Suffixed name formats
+    index: 9
+    disabled: true
+  ZIvQ2C:
+    name: Chronicle Unified Data Model (UDM)
+    index: 10
+    disabled: true
+  iWqL1y:
+    name: Cleanup
+    disabled: true
+    index: 12
+    description: Serialization and removal of selected fields to be send to its
+      destination(s).
+asyncFuncTimeout: 1000
+functions:
+  - id: comment
+    filter: "true"
+    disabled: null
+    conf:
+      comment: "SSL Logs: Initial Parse, Enrichment and Reduction functions"
+  - id: comment
+    filter: "true"
+    disabled: false
+    conf:
+      comment: >-
+        Data Format Identification: This function clarifies the data formats
+        that are being ingested into the pipeline. The pipeline supports a
+        variety of formats, including TSV (Tab-Separated Values), JSON
+        (JavaScript Object Notation), Elasticsearch, as well as various agents
+        like Splunk UF, Filebeats, and Cribl Edge. Additionally, sources like
+        HEC (HTTP Event Collector) and Syslog are also supported.
+
+
+        It's important to note that the variable Var.log_format() is defined within the Knowledge Base under Global Variables, specifically within the log_format category within this Pack.
+    groupId: tFx6qm
+  - id: eval
+    filter: "true"
+    disabled: false
+    conf:
+      add:
+        - disabled: false
+          name: log_format
+          value: C.vars.log_format()
+      keep:
+        - "*"
+    groupId: tFx6qm
+    description: "Creates an internal field identifier for the log format coming
+      through (tsv, csv, json, elastic, etc.) "
+  - id: comment
+    filter: "true"
+    disabled: false
+    conf:
+      comment: "Handling Raw Syslog Data: In cases where the ingested data comprises
+        raw syslog messages without prior preprocessing, the objective is to
+        parse these messages into distinct fields that can subsequently be
+        utilized by the subsequent functions in the pipeline. This parsing
+        process transforms the unprocessed syslog messages into structured data
+        for effective downstream processing."
+    groupId: tFx6qm
+  - id: serde
+    filter: log_format == 'syslog'
+    disabled: null
+    conf:
+      mode: extract
+      type: json
+      srcField: message
+      cleanFields: true
+      allowedKeyChars: []
+      allowedValueChars: []
+      keep: []
+      remove:
+        - message
+        - raw_mgmt
+    groupId: tFx6qm
+  - id: comment
+    filter: "true"
+    disabled: false
+    conf:
+      comment: >-
+        Processing TSV Formatted Data: In scenarios where the ingested data
+        follows the TSV (Tab-Separated Values) format, the procedure involves
+        extracting all available fields using the CL_Conn parser from the
+        Knowledge section within this Pack. It's important to note that the
+        effectiveness of this parser is influenced by the manner in which TSV
+        headers are transmitted from the Corelight sensor.
+
+
+        It's advised to meticulously validate both the types and order of fields being received. This validation process enables you to make necessary adjustments to the existing parser (CL_Conn), such as adding, removing, or reordering fields. This ensures that the parser accurately interprets the TSV data and facilitates seamless downstream processing.
+    groupId: tFx6qm
+  - id: serde
+    filter: log_format == 'TSV'
+    disabled: false
+    conf:
+      mode: extract
+      type: delim
+      delimChar: /t
+      quoteChar: '"'
+      escapeChar: \
+      nullValue: "-"
+      srcField: _raw
+      fields:
+        - ts
+        - uid
+        - id.orig_h
+        - id.orig_p
+        - id.resp_h
+        - id.resp_p
+        - version
+        - cipher
+        - curve
+        - server_name
+        - resumed
+        - last_alert
+        - next_protocol
+        - established
+        - ssl_history
+        - cert_chain_fps
+        - client_cert_chain_fps
+        - sni_matches_cert
+        - validation_status
+        - ja3
+        - ja3s
+    description: Optional - This parser function depends on how TSV headers are
+      being sent from the Sensor. Validate the types and fields order to add,
+      remove or reorder the fields in the current parser (CL_Conn)
+    groupId: tFx6qm
+  - id: comment
+    filter: "true"
+    disabled: false
+    conf:
+      comment: "Processing Data from HEC Token Format and Agents: In situations where
+        the data is ingested through HEC token formats (e.g., Splunk HEC or HTTP
+        HEC) or is sourced from agents (such as log shippers like Splunk UF,
+        Filebeats or Cribl Edge), the process involves extracting all available
+        fields from the incoming data. This step ensures that the relevant
+        information contained within the data is effectively captured for
+        subsequent processing by the pipeline."
+    groupId: tFx6qm
+  - id: serde
+    filter: log_format == 'HEC' || log_format == 'Agent'
+    disabled: false
+    conf:
+      mode: extract
+      type: json
+      srcField: _raw
+    groupId: tFx6qm
+  - id: comment
+    filter: "true"
+    disabled: false
+    conf:
+      comment: "Selective Event Filtering: The objective here is to filter out events
+        that do not match the Corelight dataset or log-type being ingested to
+        this pipeline, ensuring that only events of this specific type are
+        directed for processing within this dedicated pipeline. By implementing
+        this filter, the pipeline exclusively processes events that adhere to
+        the defined dataset or log-type, optimizing the relevance and efficiency
+        of the processing workflow."
+    groupId: tFx6qm
+  - id: drop
+    filter: "!_path.startsWith('ssl') && !__e['@path'].startsWith('ssl') &&
+      !sourcetype.includes('ssl')"
+    disabled: false
+    conf: {}
+    groupId: tFx6qm
+  - id: drop
+    filter: _path.includes('_red') || __e['@path'].startsWith('_red') ||
+      sourcetype.match(/_red/)
+    disabled: false
+    conf: {}
+    description: Optional removal of conn_red logs, will process only conn
+    groupId: tFx6qm
+  - id: auto_timestamp
+    filter: "true"
+    disabled: false
+    conf:
+      srcField: _time
+      dstField: _time
+      defaultTimezone: UTC
+      timeExpression: time.getTime() / 1000
+      offset: 0
+      maxLen: 150
+      defaultTime: now
+      latestDateAllowed: +1week
+      earliestDateAllowed: -420weeks
+    groupId: tFx6qm
+  - id: comment
+    filter: "true"
+    disabled: false
+    conf:
+      comment: "Validation and Addition of Index and Source Type Fields: This process
+        entails checking for the presence of both the Index and Source Type
+        fields within the data. In instances where these fields are absent, the
+        function takes corrective action by incorporating them based on
+        information from the data source itself and/or the predefined Global
+        Variables within the Knowledge / Global Variables section of this Pack.
+        This validation and augmentation mechanism ensures that essential
+        indexing and categorization attributes are included as required."
+    groupId: tFx6qm
+  - id: eval
+    filter: "true"
+    disabled: false
+    conf:
+      add:
+        - value: index || C.vars.index.concat('_ssl')
+          name: index
+        - name: sourcetype
+          value: sourcetype || 'corelight_'.concat(_path || __e['@path'])
+        - disabled: true
+          name: host
+          value: _system_name
+      remove:
+        - message
+        - log_format
+    groupId: tFx6qm
+    description: Define Index and source types - Index Var defined in Knowledge /
+      Global Variables
+  - id: comment
+    filter: "true"
+    disabled: false
+    conf:
+      comment: "Creates the ja3_bad_fingerprint field in the event if fingerprint is a
+        match on the  ja3_fingerprints_H.csv provided in the pack. "
+    groupId: VkMNFH
+  - id: lookup
+    filter: _path == 'ssl' || _path != 'ssl_red' || sourcetype.includes('ssl')
+    disabled: false
+    conf:
+      matchMode: exact
+      reloadPeriodSec: -1
+      addToEvent: false
+      inFields:
+        - eventField: ja3
+          lookupField: ja3_md5
+      ignoreCase: false
+      file: ja3_fingerprints_H.csv
+      outFields:
+        - lookupField: ja3_md5
+          eventField: ja3_bad_fingerprint
+    groupId: VkMNFH
+    description: SSL Blocklist - Matching Ja3 hashes found in slbl.abuse.ch
+  - id: comment
+    filter: "true"
+    disabled: null
+    conf:
+      comment: "Enhanced Custom Code Function for SSL History: This custom code
+        function has been designed to provide improved descriptions showing
+        which types of packets we received in which order. Letters have a
+        specific meaning with client-sent letters being capitalized."
+    groupId: VkMNFH
+  - id: code
+    filter: __e['ssl_history']
+    disabled: false
+    conf:
+      maxNumOfIterations: 5000
+      activeLogSampleRate: 1
+      useUniqueLogChannel: false
+      code: >-
+        __e['ssl_history_desc'] = []
+
+        var lookup = C.Lookup('CL_SSL_history.csv', 'identifier')
+
+        for (var i = 0; i < __e['ssl_history'].length; i++) {
+          __e['ssl_history_desc'].push(__e['ssl_history'].charAt(i) + ' ' + lookup.match(__e['ssl_history'].charAt(i), 'side') + ' - ' + lookup.match(__e['ssl_history'].charAt(i), 'description') );
+        }
+    description: History values placed in an object for easier read.
+    groupId: VkMNFH
+  - id: comment
+    filter: "true"
+    disabled: null
+    conf:
+      comment: >
+        SSL Cipher Strength Monitoring
+
+        This function categorizes SSL ciphers into 'Strong', 'Moderate', or 'Weak' based on key length and encryption algorithm. The classification follows these criteria:
+
+
+        1. Strong: Utilizes ECDH and AES-256.
+
+        2. Moderate: Employs RSA and AES-128.
+
+        3. Weak: Incorporates outdated algorithms like 3DES.
+
+
+        Two fields are generated:
+
+
+        1. weak_cipher: Set to 'true' when the cipher or ssl.cipher matches an entry in the CL_SSL_Ciphers.csv lookup table. Absent if no match.
+
+        2. cipher_strength (Optional): Will always displays the cipher's classification. Enable this field for detailed analysis and compliance reporting.
+
+
+        Objective: To enhance compliance and risk management by identifying cipher vulnerabilities. Periodic updates to the CL_SSL_Ciphers.CSV table are advised to stay current.
+    groupId: VkMNFH
+  - id: eval
+    filter: cipher || __e['ssl.cipher']
+    disabled: false
+    conf:
+      add:
+        - disabled: false
+          value: C.Lookup('CL_SSL_Ciphers.csv','cipher_suite').match(cipher,'classification')
+          name: __cipher_class
+        - disabled: true
+          name: cipher_strength
+          value: __cipher_class
+        - disabled: false
+          name: weak_cipher
+          value: "__cipher_class == 'Weak' ? 'true' : undefined"
+    groupId: VkMNFH
+  - id: comment
+    filter: "true"
+    disabled: null
+    conf:
+      comment: >
+        SSL Cipher Strength Monitoring and Storage
+
+
+        This group of functions processes incoming logs from Corelight sensors and focuses on SSL/TLS data. It performs several key tasks:
+
+
+        1. Cipher Classification: Categorizes the strength of each SSL cipher as 'Strong', 'Moderate', or 'Weak' based on pre-defined look-up tables.
+
+        2. Storing to Redis: Saves important SSL metadata like cipher strengths and cipher algorithms to a Redis store. Each entry is indexed by the IP address.
+
+        3. Annotation: Annotates the original log with the cipher strength classification for better readability and analysis.
+
+
+        Note: The data stored in Redis will be used for comparison in the SSH pipeline. This enables cross-protocol cipher strength analysis.
+    groupId: VkMNFH
+  - id: redis
+    filter: "true"
+    disabled: true
+    conf:
+      commands:
+        - command: set
+          keyExpr: __e['id.resp_h'] + ":ssl_strength"
+          argsExpr: |
+            `${__cipher_class}`
+        - command: set
+          keyExpr: __e['id.resp_h'] + ":ssl_cipher"
+          argsExpr: "`${cipher}`"
+        - command: expire
+          keyExpr: __e['id.resp_h'] + ":ssl_strength"
+          argsExpr: "3600"
+        - command: expire
+          keyExpr: cipher + ":ssl_cipher"
+          argsExpr: "3600"
+      deploymentType: standalone
+      authType: manual
+      maxBlockSecs: 60
+      tlsOptions:
+        rejectUnauthorized: true
+      url: "`redis://34.212.231.203:6379`"
+      password: "#42:ShZ99juv8yj/7L2MjIugCzdKoiAxZhHuWrdo6KloGIk="
+    groupId: VkMNFH
+  - id: eval
+    filter: "true"
+    disabled: true
+    conf:
+      add: []
+      remove:
+        - __cipher_class
+        - cipher_strength
+    groupId: VkMNFH
+  - id: comment
+    filter: "true"
+    disabled: false
+    conf:
+      comment: >-
+        VERY IMPORTANT:
+
+        The decision on which fields to remove largely depends on the use case, investigative needs, and the specific environment. We can make some general recommendations for fields that might be considered "less critical" in a typical environment and could potentially be safely removed for data reduction purposes. Keep in mind, these are suggestions, and you should review and confirm based on your own requirements and validate with your team.
+    groupId: TF26s0
+  - id: comment
+    filter: "true"
+    disabled: false
+    conf:
+      comment: Removes the client_cert_chain_fps field if has no value in it.
+    groupId: TF26s0
+  - id: eval
+    filter: "client_cert_chain_fps.length==0 "
+    disabled: false
+    conf:
+      remove:
+        - client_cert_chain_fps
+    groupId: TF26s0
+  - id: comment
+    filter: "true"
+    disabled: false
+    conf:
+      comment: Drops East < > West traffic
+    groupId: TF26s0
+  - id: drop
+    filter: C.Net.isPrivate(__e['id.orig_h']) && C.Net.isPrivate(__e['id.resp_h'])
+    disabled: false
+    conf: {}
+    final: false
+    groupId: TF26s0
+  - id: comment
+    filter: "true"
+    disabled: false
+    conf:
+      comment: >-
+        Redundant or Less Informative Timestamps:
+
+
+        ts: You have _time which also holds the timestamp of the event. You might consider keeping only one of these unless they offer distinct information.
+
+
+        _write_ts: If this timestamp doesn't significantly differ from the main timestamp or doesn't provide unique value for your use cases, you could consider removing it.
+    groupId: TF26s0
+  - id: eval
+    filter: "true"
+    disabled: true
+    conf:
+      remove:
+        - ts
+        - _write_ts
+    groupId: TF26s0
+  - id: comment
+    filter: "true"
+    disabled: false
+    conf:
+      comment: >-
+        SSL/TLS Handshake Details:
+
+
+        version: This indicates the TLS version. It's crucial to maintain this as different versions of TLS have different security properties.
+
+
+        cipher: This indicates the encryption cipher suite used. This can be essential for security reviews and should be retained.
+
+
+        curve: Indicates the elliptic curve used in the ECDHE cipher suite. Keep this to monitor the cryptographic strength of connections.
+
+
+        server_name: Important for ensuring the requested domain or host name.
+
+
+        resumed: Indicates if the session was resumed. Useful to identify potential unauthorized resumptions or to monitor performance optimizations.
+
+
+        established: Indicates if the connection was fully established. This is useful for monitoring successful versus failed handshakes.
+    groupId: TF26s0
+  - id: eval
+    filter: "true"
+    disabled: false
+    conf: {}
+    groupId: TF26s0
+  - id: comment
+    filter: "true"
+    disabled: false
+    conf:
+      comment: >-
+        Fields with Limited Applicability:
+
+        _system_name: If this is consistently the same value across a vast majority of your logs or if it doesn't provide additional context (given that there are other fields identifying the source or destination), it might not be necessary.
+    groupId: TF26s0
+  - id: eval
+    filter: "true"
+    disabled: false
+    conf:
+      keep: []
+      remove:
+        - _system_name
+    groupId: TF26s0
+  - id: comment
+    filter: "true"
+    disabled: false
+    conf:
+      comment: >-
+        Ambiguous Fields:
+
+        ssl_history: This might be removed unless you have specific documentation or understanding of its values, and they are critical for your analysi
+    groupId: TF26s0
+  - id: eval
+    filter: "true"
+    disabled: false
+    conf:
+      remove:
+        - ssl_history
+    groupId: TF26s0
+  - id: comment
+    filter: "true"
+    disabled: false
+    conf:
+      comment: >-
+        Fields Depending on Use Case:
+
+        sni_matches_cert: If you are confident that your environment always has correct configurations, and this field is almost always true, it might not offer much value. However, consider the security implications carefully.
+    groupId: TF26s0
+  - id: eval
+    filter: "true"
+    disabled: false
+    conf:
+      remove:
+        - sni_matches_cert
+    groupId: TF26s0
+  - id: comment
+    filter: "true"
+    disabled: false
+    conf:
+      comment: >-
+        Re-evaluate Based on Data Privacy Needs:
+
+
+        ja3 and ja3s: These hash representations might not always be necessary if you're not actively using them for threat analysis. However, they can be valuable for specific security tasks.
+    groupId: TF26s0
+  - id: eval
+    filter: "true"
+    disabled: false
+    conf:
+      remove:
+        - ja3
+        - ja3s
+    groupId: TF26s0
+  - id: comment
+    filter: "true"
+    disabled: null
+    conf:
+      comment: Optional - Event UID correlation with Redis
+  - id: comment
+    filter: "true"
+    disabled: true
+    conf:
+      comment: Adds the UID of each event through this pipeline to be correlated in
+        Conn logs if any matchings are present.
+    groupId: Yuqpin
+  - id: redis
+    filter: _path != 'conn' && _path != 'conn_red'
+    disabled: true
+    conf:
+      commands:
+        - outField: __sadd_result
+          command: sadd
+          keyExpr: "`corelight_logs:${uid}`"
+          argsExpr: _path
+        - command: expire
+          keyExpr: "`corelight_logs:${uid}`"
+          argsExpr: "3600"
+      deploymentType: standalone
+      authType: none
+      maxBlockSecs: 60
+      tlsOptions:
+        rejectUnauthorized: false
+      url: "`redis://your_redis_ip_address>:6379`"
+    groupId: Yuqpin
+    description: Adds to the Redis server the UID related to SSL logs. these values
+      expire (are removed from Redis) every 5 min. by default
+  - id: comment
+    filter: "true"
+    disabled: null
+    conf:
+      comment: >-
+        Compliance Options - CIM, ECS, MS Sentinel and Chronicle Unified Data
+        Model (UDM):
+
+        CIM (Common Information Model):
+
+        Splunk CIM Sourcetype to Data Model Mapping:
+
+        corelight_conn maps to Network_Sessions
+
+        corelight_conn maps to Network_Traffic
+
+        corelight_dhcp maps to Network_Sessions
+
+        corelight_dns maps to Network_Resolution
+
+        corelight_http maps to Web
+
+        corelight_smtp maps to Email
+
+        corelight_ssl maps to Certificates
+
+
+        ECS (Elastic Common Schema):
+
+        A unified chained pipeline CL_ECS-Chained covers: conn, dns, ssl, http, SSH, SSL, x509, Files, Stepping, RDP, DCE_RDP, SMB_Files, SMB_Mapping, Weird, Notice, Suricata Corelight datasets / log-types.
+
+
+        MS Sentinel:
+
+        Covers Sentinel Name, Asim and Suffixed name Formats
+
+        All datasets are linked via the Sentinel_cols_mappings.csv table.
+
+
+        Chronicle Unified Data Model (UDM)
+  - id: comment
+    filter: "true"
+    disabled: true
+    conf:
+      comment: "Uses a Chain function to call another pipeline depending on each
+        log-type and destination Data Model in Splunk. "
+    groupId: OsZelk
+  - id: chain
+    filter: "true"
+    disabled: true
+    conf:
+      processor: CIM_Certificates-Chained
+    groupId: OsZelk
+    description: Chains all data up to this point in the pipeline to the Splunk CIM
+      pipeline related to SSL traffic (Certificates)
+  - id: eval
+    filter: corelight_logs
+    disabled: true
+    conf:
+      add:
+        - disabled: false
+          name: esquery
+          value: "`uid:${uid} OR _path:${corelight_logs[0]} OR
+            _path:${corelight_logs[1]}`"
+    groupId: Lala0x
+  - id: comment
+    filter: "true"
+    disabled: true
+    conf:
+      comment: "Uses a Chain function to call another pipeline (corelight_ecs) which
+        will process the data. "
+    groupId: Lala0x
+  - id: chain
+    filter: "true"
+    disabled: true
+    conf:
+      processor: CL_ECS-Chained
+    groupId: Lala0x
+  - id: comment
+    filter: "true"
+    disabled: true
+    conf:
+      comment: "Attention: Select one of the three options"
+    groupId: sBOKW6
+  - id: comment
+    filter: "true"
+    disabled: true
+    conf:
+      comment: Sentinel name format
+    groupId: sBOKW6
+  - id: rename
+    filter: "true"
+    disabled: true
+    conf:
+      wildcardDepth: 4
+      renameExpr: C.Lookup('Sentinel_cols_mapping.csv', 'json_name').match(name,
+        'sentinel_name')
+      baseFields: []
+      rename: []
+    groupId: sBOKW6
+  - id: comment
+    filter: "true"
+    disabled: true
+    conf:
+      comment: Asim format
+    groupId: sBOKW6
+  - id: rename
+    filter: C.Lookup('Sentinel_cols_mapping.csv','dataset').match(_path)
+    disabled: true
+    conf:
+      wildcardDepth: 4
+      renameExpr: C.Lookup('Sentinel_cols_mapping.csv', 'json_name').match(name,
+        'asim_name')
+      baseFields: []
+      rename: []
+    groupId: sBOKW6
+  - id: comment
+    filter: "true"
+    disabled: true
+    conf:
+      comment: Suffixed name format
+    groupId: sBOKW6
+  - id: rename
+    filter: C.Lookup('Sentinel_cols_mapping.csv','dataset').match(_path)
+    disabled: true
+    conf:
+      wildcardDepth: 4
+      renameExpr: C.Lookup('Sentinel_cols_mapping.csv', 'json_name').match(name,
+        'suffixed_name')
+      baseFields: []
+      rename: []
+    groupId: sBOKW6
+  - id: chain
+    filter: "true"
+    disabled: true
+    conf:
+      processor: CL_Chronicle_Chained
+    groupId: ZIvQ2C
+  - id: comment
+    filter: "true"
+    disabled: null
+    conf:
+      comment: "Cleanup functions - Serialization elects which fields should be kept
+        in _raw. This may increase the event size depending on how many fields
+        are kept or removed and what Type of serialization should be done.
+        (i.e.: JSON > Key Value Pair > CSV)"
+  - id: serialize
+    filter: _path == 'ssl' || __e['@path'] == 'ssl'
+    disabled: true
+    conf:
+      type: kvp
+      fields:
+        - _path
+        - _system_name
+        - _time
+        - action
+        - curve
+        - dest*
+        - direction
+        - duration
+        - established
+        - index
+        - ja3
+        - ja3s
+        - logtype
+        - resumed
+        - sourcetype
+        - src*
+        - ssl*
+        - tag
+        - uid
+      dstField: _raw
+      cleanFields: false
+      delimChar: /x09
+      quoteChar: '"'
+      escapeChar: \
+      nullValue: "-"
+    groupId: iWqL1y
+    description: Fields to serialize selected based on each environment selection.
+      Negating a field must happens before each field name to be serialized.
+      Accepts wildcards
+  - id: eval
+    filter: _path == 'ssl' || __e['@path'].startsWith('ssl') || sourcetype.match(/ssl/)
+    disabled: true
+    conf:
+      remove:
+        - "*"
+      keep:
+        - _raw
+        - index
+        - sourcetype
+    description: Cleanup - Remove fields (extracted an in the event) or keep fields
+      to be sent to its destination(s).
+    groupId: iWqL1y

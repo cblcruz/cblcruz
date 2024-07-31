@@ -1,0 +1,1551 @@
+output: default
+streamtags: []
+functions:
+  - id: comment
+    filter: "true"
+    disabled: null
+    conf:
+      comment: Initial Parsing before setting to ECS
+  - id: regex_extract
+    filter: log_format == 'TSV'
+    disabled: false
+    conf:
+      source: sourcetype
+      iterations: 100
+      overwrite: false
+      regex: /corelight_(?<_path>.*)/
+      regexList:
+        - regex: /corelight_(?<tsvpath>.*)/
+  - id: comment
+    filter: "true"
+    disabled: false
+    conf:
+      comment: "Provides base mapping to ECS. Please modify the Rename function to fit
+        your needs. "
+    groupId: abJQ24
+  - id: eval
+    filter: _path.includes('conn') || __e['@path'].startsWith('conn') ||
+      sourcetype.match(/conn/)
+    disabled: false
+    conf:
+      add:
+        - name: temporary_metadata_index_name_suffix
+          value: "'conn'"
+        - name: "'event.category'"
+          value: "'network'"
+        - value: "local_orig == true ? (local_resp == true ? 'internal': 'outbound') :
+            (local_resp == true ? 'inbound' : 'unknown')"
+          name: "'network.direction'"
+        - value: Math.round(duration * 1000000000)
+          name: "'event.duration'"
+        - name: "'network_ip_bytes'"
+          value: orig_ip_bytes + resp_ip_bytes
+        - name: "'network.packets'"
+          value: orig_packets + resp_packets
+      remove:
+        - duration
+    groupId: abJQ24
+    final: false
+  - id: rename
+    filter: _path == 'conn' || sourcetype.includes('conn')
+    disabled: false
+    conf:
+      wildcardDepth: 5
+      rename:
+        - currentName: proto
+          newName: "'network.transport'"
+        - currentName: suri_ids
+          newName: "'log.id.suri_ids'"
+        - currentName: tunnel_parents
+          newName: "'log.id.tunnel_parents'"
+        - currentName: orig_bytes
+          newName: "'source.bytes'"
+        - currentName: orig_ip_bytes
+          newName: "'source.ip_bytes'"
+        - currentName: resp_ip_bytes
+          newName: "'destination.ip_bytes'"
+        - currentName: orig_l2_addr
+          newName: "'source.mac'"
+        - currentName: network_direction
+          newName: "'network.direction'"
+        - currentName: local_orig
+          newName: "'conn.local_orig'"
+        - currentName: local_resp
+          newName: "'conn.local_resp'"
+        - currentName: resp_bytes
+          newName: "'destination.bytes'"
+        - currentName: network_bytes
+          newName: "'network.bytes'"
+        - currentName: history
+          newName: "'network.connection.history'"
+        - currentName: network_ip_bytes
+          newName: "'network.ip_bytes'"
+        - currentName: missed_bytes
+          newName: "'network.missed_bytes'"
+        - currentName: orig_pkts
+          newName: "'source.packets'"
+        - currentName: resp_pkts
+          newName: "'destination.packets'"
+        - currentName: service
+          newName: "'network.protocol'"
+        - currentName: resp_l2_addr
+          newName: "'destination.mac'"
+        - currentName: cache_add_rx_ev
+          newName: "'conn.cache_add_rx_ev'"
+        - currentName: cache_add_rx_mpg
+          newName: "'conn.cache_add_rx_mpg'"
+        - currentName: cache_add_rx_new
+          newName: "'conn.cache_add_rx_new'"
+        - currentName: cache_add_tx_ev
+          newName: "'conn.cache_add_tx_ev'"
+        - currentName: cache_add_tx_mpg
+          newName: "'conn.cache_add_tx_mpg'"
+        - currentName: cache_del_mpg
+          newName: "'conn.cache_del_mpg'"
+        - currentName: cache_entries
+          newName: "'conn.cache_entries'"
+        - currentName: community_id
+          newName: "'network.community_id'"
+        - currentName: corelight_shunted
+          newName: "'conn.corelight_shunted'"
+        - currentName: id.orig_h_name.src
+          newName: "'conn.id.orig_h_name.src'"
+        - currentName: id.orig_h_name.vals
+          newName: "'conn.id.orig_h_name.vals'"
+        - currentName: id.resp_h_name.src
+          newName: "'conn.id.resp_h_name.src'"
+        - currentName: id.resp_h_name.vals
+          newName: "'conn.id.resp_h_name.vals'"
+        - currentName: orig_shunted_bytes
+          newName: "'conn.orig_shunted_bytes'"
+        - currentName: orig_shunted_pkts
+          newName: "'conn.orig_shunted_pkts'"
+        - currentName: resp_shunted_bytes
+          newName: "'conn.resp_shunted_bytes'"
+        - currentName: resp_shunted_pkts
+          newName: "'conn.resp_shunted_pkts'"
+        - currentName: app
+          newName: "'network.application'"
+        - currentName: resp_cc
+          newName: "'destination.geo.country_iso_code'"
+        - currentName: orig_cc
+          newName: "'source.geo.country_iso_code'"
+        - currentName: "'spcap.rule'"
+          newName: "'labels.corelight.spcap.rule'"
+        - currentName: "'spcap.trigger'"
+          newName: "'labels.corelight.spcap_trigger'"
+        - currentName: "'spcap.url'"
+          newName: "'labels.corelight.spcap_url'"
+        - currentName: id_vlan
+          newName: "'network.vlan.id'"
+        - currentName: "'id.orig_h'"
+          newName: "'conn.id.orig_h'"
+        - currentName: "'id.orig_p'"
+          newName: "'conn.id.orig_p'"
+        - currentName: "'id.resp_h'"
+          newName: "'conn.id.resp_h'"
+        - currentName: "'id.resp_p'"
+          newName: "'conn.id.resp_p'"
+        - currentName: message
+          newName: "'event.original'"
+        - currentName: conn_state
+          newName: "'network.connection.state'"
+    groupId: abJQ24
+  - id: eval
+    filter: _path == 'conn' || sourcetype.includes('conn')
+    disabled: false
+    conf:
+      add: []
+      remove:
+        - id.resp_h_name.src
+        - id_vlan
+        - id.resp_h_name.vals
+        - id
+        - id.orig_h_name.vals
+        - id.orig_h_name.src
+    groupId: abJQ24
+    final: false
+  - id: eval
+    filter: _path.includes('intel') || __e['@path'].startsWith('intel') ||
+      sourcetype.match(/intel/)
+    disabled: false
+    conf:
+      add:
+        - name: temporary_metadata_index_name_suffix
+          value: "'various'"
+        - name: "'event.category'"
+          value: "'network'"
+      remove:
+        - "'ignore_failure'"
+    groupId: xWHwRp
+  - id: rename
+    filter: _path.includes('intel') || __e['@path'].startsWith('intel') ||
+      sourcetype.match(/intel/)
+    disabled: false
+    conf:
+      wildcardDepth: 5
+      rename:
+        - currentName: "'seen.indicator'"
+          newName: "'intel.seen.indicator'"
+        - newName: "'intel.seen.indicator_type'"
+          currentName: "'seen.indicator_type'"
+        - newName: "'intel.seen.where'"
+          currentName: "'seen.where'"
+        - newName: "'intel.seen.node'"
+          currentName: "'seen.node'"
+        - newName: "'host.ip'"
+          currentName: "'seen.host'"
+        - currentName: matched
+          newName: "'intel.matched'"
+        - newName: "'intel.seen.sources'"
+          currentName: sources
+        - currentName: proto
+          newName: "'network.transport'"
+        - newName: "'log.id.fuid'"
+          currentName: fuid
+        - newName: "'file.mime_type'"
+          currentName: file_mime_type
+        - newName: "'intel.file_description'"
+          currentName: file_desc
+    groupId: xWHwRp
+  - id: eval
+    filter: _path.includes('intel') || __e['@path'].startsWith('intel') ||
+      sourcetype.match(/intel/)
+    disabled: false
+    conf:
+      remove:
+        - _system_name
+        - _write_ts
+        - ts
+    groupId: xWHwRp
+    final: false
+  - id: comment
+    filter: "true"
+    disabled: false
+    conf:
+      comment: "Provides base mapping to ECS. Please modify the Rename function to fit
+        your needs. "
+    groupId: fhmp4N
+  - id: eval
+    filter: _path.includes('dns') || __e['@path'].startsWith('dns') ||
+      sourcetype.match(/dns/)
+    disabled: false
+    conf:
+      add:
+        - name: length
+          value: query.length
+        - name: temporary_metadata_index_name_suffix
+          value: "'dns'"
+        - name: "'event.category'"
+          value: "'network'"
+        - name: "'network.protocol'"
+          value: "'dns'"
+        - name: "'event.outcome'"
+          value: "rejected == false ? 'sucess' : 'failure'"
+        - name: "'destination.domain'"
+          value: query
+        - name: "'dns.question.registered_domain'"
+          value: "query.substring(query.indexOf('.') + 1) "
+        - name: "'event.duration'"
+          value: rtt * 1000000
+        - disabled: false
+          name: "'dns.header.flags'"
+          value: new Array()
+        - disabled: false
+          value: "AA == true ? __e['dns.header.flags'].push('AA') : ''"
+          name: ""
+        - value: "RA == true ? __e['dns.header.flags'].push('RA') : ''"
+          name: ""
+        - disabled: false
+          value: "RD == true ? __e['dns.header.flags'].push('RD') : ''"
+          name: ""
+        - disabled: false
+          value: "TC == true ? __e['dns.header.flags'].push('TC') : ''"
+          name: ""
+      remove:
+        - query
+    groupId: fhmp4N
+  - id: rename
+    filter: _path.includes('dns') || __e['@path'].startsWith('dns') ||
+      sourcetype.match(/dns/)
+    disabled: false
+    conf:
+      wildcardDepth: 5
+      rename:
+        - currentName: proto
+          newName: "'network.transport'"
+        - currentName: addl
+          newName: "'dns.additionals.name'"
+        - currentName: auth
+          newName: "'dns.additionals.authoritative.name'"
+        - currentName: answers
+          newName: "'dns.answers.name'"
+        - currentName: TTLs
+          newName: "'dns.answers.ttl'"
+        - currentName: AA
+          newName: "'dns.flags.authoritative'"
+        - currentName: RA
+          newName: "'dns.flags.recursion.available'"
+        - currentName: RD
+          newName: "'dns.flags.recursion.desired'"
+        - currentName: rejected
+          newName: "'dns.flags.rejected'"
+        - currentName: TC
+          newName: "'dns.flags.truncated.response'"
+        - currentName: Z
+          newName: "'dns.flags.z_bit'"
+        - currentName: qclass
+          newName: "'dns.question.class_code'"
+        - currentName: qclass_name
+          newName: "'dns.question.class'"
+        - currentName: qtype
+          newName: "'dns.question.type_code'"
+        - currentName: qtype_name
+          newName: "'dns.question.type'"
+        - currentName: length
+          newName: "'dns.question.name_length'"
+        - currentName: query
+          newName: "'dns.question.name'"
+        - currentName: rcode_name
+          newName: "'dns.response_code'"
+        - currentName: rtt
+          newName: "'dns.rtt'"
+        - currentName: rcode
+          newName: "'dns.status_code'"
+        - currentName: trans_id
+          newName: "'dns.id'"
+        - currentName: message
+          newName: "'event.original'"
+    groupId: fhmp4N
+  - id: eval
+    filter: _path.inclues('dns') || sourcetype.includes('dns')
+    disabled: false
+    conf:
+      add: []
+      remove:
+        - rtt
+        - id
+    groupId: fhmp4N
+  - id: comment
+    filter: "true"
+    disabled: false
+    conf:
+      comment: "Provides base mapping to ECS. Please modify the Rename function to fit
+        your needs. "
+    groupId: 2XD4ie
+  - id: eval
+    filter: _path.includes('ssl') || __e['@path'].startsWith('ssl') ||
+      sourcetype.match(/ssl/)
+    disabled: false
+    conf:
+      add:
+        - name: temporary_metadata_index_name_suffix
+          value: "'ssl'"
+        - name: "'event.category'"
+          value: "'network'"
+        - name: "'destination.domain'"
+          value: server_name
+        - name: "'network.transport'"
+          value: "'tcp'"
+        - name: "'event.dataset'"
+          value: "'tls'"
+        - name: "'event.outcome'"
+          value: "established == true ? 'success' : (established == false ? 'failure' :
+            'unknown')"
+      remove:
+        - id
+        - server_name
+    groupId: 2XD4ie
+  - id: rename
+    filter: _path.includes('ssl') || __e['@path'].startsWith('ssl') ||
+      sourcetype.match(/ssl/)
+    disabled: false
+    conf:
+      wildcardDepth: 5
+      rename:
+        - currentName: cert_chain_fuids
+          newName: "'log.id.cert_chain_fuids'"
+        - currentName: client_cert_chain_fuids
+          newName: "'log.id.client_cert_chain_fuids'"
+        - currentName: server_name
+          newName: "'tls.client.server_name'"
+        - currentName: cipher
+          newName: "'tls.cipher'"
+        - currentName: client_issuer
+          newName: "'tls.client.issuer'"
+        - currentName: orig_certificate_sha1
+          newName: "'tls.client.hash.sha1'"
+        - currentName: client_subject
+          newName: "'tls.client.subject'"
+        - currentName: curve
+          newName: "'tls.curve'"
+        - currentName: established
+          newName: "'tls.established'"
+        - currentName: ja3
+          newName: "'tls.client.ja3'"
+        - currentName: ja3s
+          newName: "'tls.server.ja3s'"
+        - currentName: last_alert
+          newName: "'ssl.last_alert'"
+        - currentName: next_protocol
+          newName: "'tls.next_protocol'"
+        - currentName: notary
+          newName: "'ssl.notary'"
+        - currentName: ocsp_status
+          newName: "'ssl.oscp_status'"
+        - currentName: resumed
+          newName: "'tls.resumed'"
+        - currentName: issuer
+          newName: "'tls.server.issuer'"
+        - currentName: resp_certificate_sha1
+          newName: "'tls.server.hash.sha1'"
+        - currentName: subject
+          newName: "'tls.server.subject'"
+        - currentName: valid_ct_logs
+          newName: "'ssl.valid_ct_logs'"
+        - currentName: valid_ct_operators
+          newName: "'ssl.valid_ct_operators'"
+        - currentName: valid_ct_operators_list
+          newName: "'ssl.valid_ct_operators_list'"
+        - currentName: validation_status
+          newName: "'ssl.validation_status'"
+        - currentName: version
+          newName: "'tls.version'"
+        - currentName: version_num
+          newName: "'ssl.version_number'"
+        - currentName: message
+          newName: "'event.original'"
+        - currentName: ssl_history
+          newName: "'ssl.connection_history'"
+    groupId: 2XD4ie
+  - id: comment
+    filter: "true"
+    disabled: false
+    conf:
+      comment: "Provides base mapping to ECS. Please modify the Rename function to fit
+        your needs. "
+    groupId: K0doNn
+  - id: eval
+    filter: _path.includes('http') || __e['@path'].startsWith('http') ||
+      sourcetype.match(/http/)
+    disabled: false
+    conf:
+      add:
+        - name: temporary_metadata_index_name_suffix
+          value: "'http'"
+        - name: "'event.category'"
+          value: "'network'"
+        - name: "'destination.domain'"
+          value: rx_hosts
+        - name: "'server.address'"
+          value: tx_hosts
+        - name: "'log.id.fuid'"
+          value: fuid
+        - name: "'event.id'"
+          value: fuid
+        - name: "'event.duration'"
+          value: file.duration * 1000000
+      remove: []
+    groupId: K0doNn
+  - id: rename
+    filter: _path.includes('http') || __e['@path'].startsWith('http') ||
+      sourcetype.match(/http/)
+    disabled: false
+    conf:
+      wildcardDepth: 5
+      rename:
+        - currentName: orig_fuids
+          newName: "'log.id.orig_fuids'"
+        - currentName: username
+          newName: "'source.user.name'"
+        - currentName: password
+          newName: "'source.user.password'"
+        - currentName: resp_fuids
+          newName: "'url.domain'"
+        - currentName: host
+          newName: "'url.domain'"
+        - currentName: cookie_vars
+          newName: "'http.cookie_variables'"
+        - currentName: client_header_names
+          newName: "'http.request.header_names'"
+        - currentName: info_msg
+          newName: "'http.response.informational_message'"
+        - currentName: method
+          newName: "'http.request.method'"
+        - currentName: orig_filenames
+          newName: "'http.orig_filenames'"
+        - currentName: orig_mime_types
+          newName: "'http.request.mime_type'"
+        - currentName: origin
+          newName: "'http.request.origin'"
+        - currentName: proxied
+          newName: "'http.request.proxied'"
+        - currentName: referrer
+          newName: "'http.request.referrer'"
+        - currentName: server_header_names
+          newName: "'http.response.header_names'"
+        - currentName: resp_mime_types
+          newName: "'http.response.mime_type'"
+        - currentName: status_msg
+          newName: "'http.response.status_name'"
+        - currentName: version
+          newName: "'http.version'"
+        - currentName: resp_filenames
+          newName: "'http.resp_filenames'"
+        - currentName: flash_version
+          newName: "'software.flash_version'"
+        - currentName: uri_vars
+          newName: "'url.variables'"
+        - currentName: uri
+          newName: "'url.original'"
+        - currentName: user_agent
+          newName: "'user_agent.original'"
+        - currentName: info_code
+          newName: "'http.response.informational_code'"
+        - currentName: request_body_len
+          newName: "'http.request.body.bytes'"
+        - currentName: response_body_len
+          newName: "'http.response.body.bytes'"
+        - currentName: status_code
+          newName: "'http.response.status_code'"
+        - currentName: trans_depth
+          newName: "'http.transaction_depth'"
+        - currentName: omniture
+          newName: "'http.response.omniture'"
+        - currentName: encoding
+          newName: "'http.encoding'"
+        - currentName: push
+          newName: "'http.push'"
+        - currentName: stream
+          newName: "'http.stream'"
+        - currentName: post_body
+          newName: "'http.request.body.content'"
+        - currentName: message
+          newName: "'event.original'"
+        - currentName: tags
+          newName: "'http.tags'"
+    groupId: K0doNn
+  - id: eval
+    filter: _path.includes('http') || __e['@path'].startsWith('http') ||
+      sourcetype.match(/http/)
+    disabled: false
+    conf:
+      add: []
+      remove:
+        - id
+        - local_orig
+        - duration
+        - fuid
+    groupId: K0doNn
+  - id: comment
+    filter: "true"
+    disabled: false
+    conf:
+      comment: "Provides base mapping to ECS. Please modify the Rename function to fit
+        your needs. "
+    groupId: pCGnoD
+  - id: eval
+    filter: _path.includes('ssh') || __e['@path'].startsWith('ssh') ||
+      sourcetype.match(/ssh/)
+    disabled: false
+    conf:
+      add:
+        - name: temporary_metadata_index_name_suffix
+          value: "'ssh'"
+        - disabled: false
+          name: "'network.transport'"
+          value: "'tcp'"
+        - name: "'event.category'"
+          value: "'network'"
+        - disabled: false
+          name: "'source.software.original'"
+          value: client
+        - disabled: false
+          name: "'event.outcome'"
+          value: "auth_success ? 'sucess' : 'failure'"
+        - disabled: false
+          name: "'destination.software.original'"
+          value: server
+      remove:
+        - id
+        - server_name
+    groupId: pCGnoD
+  - id: rename
+    filter: _path.includes('ssh') || __e['@path'].startsWith('ssh') ||
+      sourcetype.match(/ssh/)
+    disabled: false
+    conf:
+      wildcardDepth: 5
+      rename:
+        - currentName: client
+          newName: "'ssh.client'"
+        - newName: "'network.direction'"
+          currentName: direction
+        - currentName: auth_attempts
+          newName: "'ssh.auth_attempts'"
+        - currentName: auth_success
+          newName: "'ssh.auth_successful'"
+        - currentName: cipher_alg
+          newName: "'ssh.cipher'"
+        - currentName: compression_alg
+          newName: "'ssh.compression_algorithm'"
+        - newName: "'ssh.cshka'"
+          currentName: cshka
+        - currentName: hassh
+          newName: "'ssh.hassh'"
+        - currentName: hasshAlgorithms
+          newName: "'ssh.hasshAlgorithms'"
+        - currentName: hasshServer
+          newName: "'ssh.hasshServer'"
+        - currentName: hasshServerAlgorithms
+          newName: "'ssh.hasshServerAlgorithms'"
+        - currentName: hasshVersion
+          newName: "'ssh.hasshVersion'"
+        - currentName: host_key
+          newName: "'ssh.host_key'"
+        - currentName: host_key_alg
+          newName: "'ssh.key_algorithm'"
+        - currentName: kex_alg
+          newName: "'ssh.key_exchange_algorithm'"
+        - currentName: mac_alg
+          newName: "'ssh.mac_algorithm'"
+        - newName: "'ssh.server'"
+          currentName: server
+        - newName: "'ssh.version'"
+          currentName: version
+    groupId: pCGnoD
+  - id: comment
+    filter: "true"
+    disabled: false
+    conf:
+      comment: "Provides base mapping to ECS. Please modify the Rename function to fit
+        your needs. "
+    groupId: Z0ZufB
+  - id: eval
+    filter: _path.includes('x509') || __e['@path'].startsWith('x509') ||
+      sourcetype.match(/x509/)
+    disabled: false
+    conf:
+      add:
+        - name: temporary_metadata_index_name_suffix
+          value: "'x509'"
+        - name: "'event.category'"
+          value: "'file'"
+        - disabled: false
+          name: "'event.id'"
+          value: id
+      remove:
+        - fuid
+    groupId: Z0ZufB
+  - id: rename
+    filter: _path == 'x509' || sourcetype.includes('x509')
+    disabled: false
+    conf:
+      wildcardDepth: 5
+      rename:
+        - currentName: "'basic_constraints.ca'"
+          newName: "'file.x509.certificate.basic_constraints.ca'"
+        - currentName: "'basic_constraints.path_length'"
+          newName: "'file.x509.certificate.basic_constraints.path_length'"
+        - currentName: "'certificate.cn'"
+          newName: "'file.x509.certificate.common_name'"
+        - currentName: "'certificate.curve'"
+          newName: "'file.x509.public_key_curve'"
+        - currentName: "'certificate.exponent'"
+          newName: "'file.x509.certificate.exponent'"
+        - currentName: "'certificate.issuer'"
+          newName: "'file.x509.issuer.distinguished_name'"
+        - currentName: "'certificate.key_alg'"
+          newName: "'file.x509.public_key_algorithm'"
+        - currentName: "'certificate.key_length'"
+          newName: "'file.x509.public_key_size'"
+        - currentName: "'certificate.key_type'"
+          newName: "'file.x509.public_key_type'"
+        - currentName: "'certificate.not_valid_after'"
+          newName: "'file.x509.not_after'"
+        - currentName: "'certificate.not_valid_before'"
+          newName: "'file.x509.not_before'"
+        - currentName: "'certificate.serial'"
+          newName: "'file.x509.serial_number'"
+        - currentName: "'certificate.sig_alg'"
+          newName: "'file.x509.signature_algorithm'"
+        - currentName: "'certificate.subject'"
+          newName: "'file.x509.subject.distinguished_name'"
+        - currentName: "'certificate.version'"
+          newName: "'file.x509.subject.version_number'"
+        - currentName: "'logcert'"
+          newName: "'file.x509.logcert'"
+        - currentName: "'san.dns'"
+          newName: "'file.x509.san_dns'"
+        - currentName: "'san.email'"
+          newName: "'file.x509.san_email'"
+        - currentName: "'san.ip'"
+          newName: "'file.x509.san_ip'"
+        - currentName: "'san.url'"
+          newName: "'file.x509.san_url'"
+        - currentName: "'basic_constraints_ca'"
+          newName: "'file.x509.certificate.basic_constraints.ca'"
+        - currentName: "'basic_constraints_path_length'"
+          newName: "'file.x509.certificate.basic_constraints.path_length'"
+        - currentName: "'certificate_cn'"
+          newName: "'file.x509.certificate.common_name'"
+        - currentName: certificate_curve
+          newName: "'file.x509.public_key_curve'"
+        - currentName: certificate_exponent
+          newName: "'file.x509.public_key_exponent'"
+        - currentName: certificate_issuer
+          newName: "'file.x509.issuer.distinguished_name'"
+        - currentName: certificate_key_alg
+          newName: "'file.x509.public_key_algorithm'"
+        - currentName: certificate_key_length
+          newName: "'file.x509.public_key_size'"
+        - currentName: certificate_key_type
+          newName: "'file.x509.public_key_type'"
+        - currentName: certificate_not_valid_after
+          newName: "'file.x509.not_after'"
+        - currentName: certificate_not_valid_before
+          newName: "'file.x509.not_before'"
+        - currentName: certificate_serial
+          newName: "'file.x509.serial_number'"
+        - currentName: certificate_sig_alg
+          newName: "'file.x509.signature_algorithm'"
+        - currentName: certificate_subject
+          newName: "'file.x509.subject.distinguished_name'"
+        - currentName: certificate_version
+          newName: "'file.x509.subject.version_number'"
+        - currentName: id
+          newName: "'log.id.id'"
+    groupId: Z0ZufB
+  - id: eval
+    filter: _path == 'x509' || sourcetype.includes('x509')
+    disabled: false
+    conf:
+      add:
+        - disabled: false
+          name: "'file.x509.public_key_exponent'"
+          value: Number.parseInt(__e['file.x509.certificate.exponent'])
+        - disabled: false
+          value: __e['file.x509.san_url']
+          name: "'url.original'"
+      remove:
+        - id
+    groupId: Z0ZufB
+  - id: comment
+    filter: "true"
+    disabled: false
+    conf:
+      comment: "Provides base mapping to ECS. Please modify the Rename function to fit
+        your needs. "
+    groupId: 8lRhdX
+  - id: eval
+    filter: _path.includes('files') || __e['@path'].startsWith('files') ||
+      sourcetype.match(/files/)
+    disabled: false
+    conf:
+      add:
+        - name: temporary_metadata_index_name_suffix
+          value: "'files'"
+        - name: "'event.category'"
+          value: "'file'"
+        - value: Math.round(duration * 1000000000)
+          name: "'event.duration'"
+        - disabled: false
+          name: "'client.address'"
+          value: tx_hosts
+        - disabled: false
+          name: "'log.id.fuid'"
+          value: fuid
+        - disabled: false
+          name: "'event.id'"
+          value: fuid
+        - disabled: false
+          name: "'server.address'"
+          value: tx_hosts
+      remove:
+        - fuid
+    groupId: 8lRhdX
+  - id: rename
+    filter: _path == 'files' || sourcetype.includes('files')
+    disabled: false
+    conf:
+      wildcardDepth: 5
+      rename:
+        - currentName: temp_source
+          newName: "'network.protocol'"
+        - currentName: source
+          newName: "'network.protocol'"
+        - currentName: tx_hosts
+          newName: "'files.tx_hosts'"
+        - currentName: rx_hosts
+          newName: "'files.rx_hosts'"
+        - newName: "'log.id.conn_uids'"
+          currentName: conn_uids
+        - newName: "'file.analyzers'"
+          currentName: analyzers
+        - currentName: depth
+          newName: "'file.depth' "
+        - currentName: duration
+          newName: "'file.duration'"
+        - newName: "'file.extracted'"
+          currentName: extracted
+        - currentName: extracted_cutoff
+          newName: "'file.extracted_cutoff'"
+        - currentName: extracted_size
+          newName: "'file.extracted_size'"
+        - currentName: entropy
+          newName: "'file.entropy'"
+        - newName: "'file.hash.md5'"
+          currentName: md5
+        - newName: "'file.hash.sha1'"
+          currentName: sha1
+        - currentName: sha256
+          newName: "'file.hash.sha256'"
+        - newName: "'file.is_orig'"
+          currentName: is_orig
+        - currentName: local_orig
+          newName: "'file.local_orig'"
+        - currentName: timedout
+          newName: "'file.timedout'"
+        - currentName: mime_type
+          newName: "'file.mime_type'"
+        - currentName: filename
+          newName: "'file.name'"
+        - currentName: missing_bytes
+          newName: "'file.missing_bytes'"
+        - newName: "'file.overflow_bytes'"
+          currentName: overflow_bytes
+        - currentName: seen_bytes
+          newName: "'file.seen_bytes'"
+        - currentName: total_bytes
+          newName: "'file.size'"
+        - currentName: parent_fuid
+          newName: "'log.id.parent_fuid'"
+    groupId: 8lRhdX
+  - id: eval
+    filter: _path == 'files' || sourcetype.includes('files')
+    disabled: false
+    conf:
+      add: []
+      remove:
+        - id.resp_h_name.src
+        - id_vlan
+        - id.resp_h_name.vals
+        - id
+        - id.orig_h_name.vals
+        - id.orig_h_name.src
+        - tx_hosts
+    groupId: 8lRhdX
+  - id: comment
+    filter: "true"
+    disabled: false
+    conf:
+      comment: "Provides base mapping to ECS. Please modify the Rename function to fit
+        your needs. "
+    groupId: kx1TsZ
+  - id: eval
+    filter: _path.includes('stepping') || __e['@path'].startsWith('stepping') ||
+      sourcetype.match(/stepping/)
+    disabled: false
+    conf:
+      add:
+        - name: temporary_metadata_index_name_suffix
+          value: "'stepping'"
+        - disabled: false
+          name: "'network.transport'"
+          value: "'tcp'"
+        - name: "'event.category'"
+          value: "'detection'"
+        - disabled: false
+          name: direct
+          value: '(direct == "T" || direct == true) ? true : false'
+      remove:
+        - id
+        - server_name
+    groupId: kx1TsZ
+  - id: rename
+    filter: _path.includes('stepping') || __e['@path'].startsWith('stepping') ||
+      sourcetype.match(/stepping/)
+    disabled: false
+    conf:
+      wildcardDepth: 5
+      rename:
+        - newName: "'ssh.stepping.direct'"
+          currentName: direct
+        - newName: "'ssh.stepping.dt'"
+          currentName: dt
+        - newName: "'ssh.stepping.uid1'"
+          currentName: uid1
+        - newName: "'ssh.stepping.uid2'"
+          currentName: uid2
+        - newName: "'ssh.stepping.uid3'"
+          currentName: uid3
+        - newName: "'ssh.stepping.uid4'"
+          currentName: uid4
+        - newName: "'ssh.stepping.uid5'"
+          currentName: uid5
+        - newName: "'ssh.stepping.uid6'"
+          currentName: uid6
+        - newName: "'ssh.stepping.uid7'"
+          currentName: uid7
+        - newName: "'ssh.stepping.uid8'"
+          currentName: uid8
+        - newName: "'ssh.stepping.uid9'"
+          currentName: uid9
+        - newName: "'ssh.stepping.uid10'"
+          currentName: uid10
+        - newName: "'ssh.stepping.client1_ip'"
+          currentName: client1_h
+        - newName: "'ssh.stepping.client1_port'"
+          currentName: client1_p
+        - currentName: client2_h
+          newName: "'ssh.stepping.client2_ip'"
+        - newName: "'ssh.stepping.client2_port'"
+          currentName: client2_p
+        - currentName: client3_h
+          newName: "'ssh.stepping.client3_ip'"
+        - currentName: client3_p
+          newName: "'ssh.stepping.client3_port'"
+        - currentName: client4_h
+          newName: "'ssh.stepping.client4_ip'"
+        - currentName: client4_p
+          newName: "'ssh.stepping.client4_port'"
+        - currentName: client5_h
+          newName: "'ssh.stepping.client5_ip'"
+        - currentName: client5_p
+          newName: "'ssh.stepping.client5_port'"
+        - currentName: client6_h
+          newName: "'ssh.stepping.client6_port'"
+        - newName: "'ssh.stepping.client7_ip'"
+          currentName: client7_h
+        - currentName: client7_p
+          newName: "'ssh.stepping.client7_port'"
+        - currentName: client8_h
+          newName: "'ssh.stepping.client8_ip'"
+        - currentName: client8_p
+          newName: "'ssh.stepping.client8_port'"
+        - currentName: client9_h
+          newName: "'ssh.stepping.client9_ip'"
+        - currentName: client9_p
+          newName: "'ssh.stepping.client9_port'"
+        - currentName: client10_h
+          newName: "'ssh.stepping.client10_ip'"
+        - currentName: client10_p
+          newName: "'ssh.stepping.client10_port'"
+        - currentName: server1_h
+          newName: "'ssh.stepping.server1_ip'"
+        - newName: "'ssh.stepping.server1_port'"
+          currentName: server1_p
+        - currentName: server2_h
+          newName: "'ssh.stepping.server2_ip'"
+        - currentName: server2_p
+          newName: "'ssh.stepping.server2_port'"
+        - currentName: server3_h
+          newName: "'ssh.stepping.server3_ip'"
+        - currentName: server3_p
+          newName: "'ssh.stepping.server3_port'"
+        - currentName: server4_h
+          newName: "'ssh.stepping.server4_ip'"
+        - currentName: server4_p
+          newName: "'ssh.stepping.server4_port'"
+        - currentName: server5_h
+          newName: "'ssh.stepping.server5_ip'"
+        - currentName: server5_p
+          newName: "'ssh.stepping.server5_port'"
+        - currentName: server6_h
+          newName: "'ssh.stepping.server6_ip'"
+        - currentName: server6_p
+          newName: "'ssh.stepping.server6_port'"
+        - currentName: server7_h
+          newName: "'ssh.stepping.server7_ip'"
+        - currentName: server7_p
+          newName: "'ssh.stepping.server7_port'"
+        - currentName: server8_h
+          newName: "'ssh.stepping.server8_ip'"
+        - currentName: server8_p
+          newName: "'ssh.stepping.server8_port'"
+        - currentName: server9_h
+          newName: "'ssh.stepping.server9_ip'"
+        - currentName: server9_p
+          newName: "'ssh.stepping.server9_port'"
+        - currentName: server10_h
+          newName: "'ssh.stepping.server10_ip'"
+        - currentName: server10_p
+          newName: "'ssh.stepping.server10_port'"
+    groupId: kx1TsZ
+  - id: comment
+    filter: "true"
+    disabled: false
+    conf:
+      comment: "Provides base mapping to ECS. Please modify the Rename function to fit
+        your needs. "
+    groupId: ay1Erh
+  - id: eval
+    filter: _path.includes('rdp') || __e['@path'].startsWith('rdp') ||
+      sourcetype.match(/rdp/)
+    disabled: false
+    conf:
+      add:
+        - name: temporary_metadata_index_name_suffix
+          value: "'rdp'"
+        - name: "'event.category'"
+          value: "'network'"
+        - name: "'event.outcome'"
+          value: "auth_success == true ? 'success' : (auth_success == false ? 'failure' :
+            'unknown')"
+        - disabled: false
+          value: client_build
+          name: "'software.original'"
+        - disabled: false
+          name: "'source.hostname'"
+          value: client_name
+      remove:
+        - id
+    groupId: ay1Erh
+  - id: rename
+    filter: _path.includes('rdp') || __e['@path'].startsWith('rdp') ||
+      sourcetype.match(/rdp/)
+    disabled: false
+    conf:
+      wildcardDepth: 5
+      rename:
+        - currentName: cert_count
+          newName: "'rdp.certificate.count'"
+        - currentName: cert_permanent
+          newName: "'rdp.certificate.permanent'"
+        - currentName: cert_type
+          newName: "'rdp.certificate.type'"
+        - currentName: client_build
+          newName: "'rdp.source.build'"
+        - newName: "'rdp.source.dig_product_id'"
+          currentName: client_dig_product_id
+        - currentName: client_name
+          newName: "'rdp.source.name'"
+        - currentName: cookie
+          newName: "'rdp.cookie'"
+        - currentName: desktop_height
+          newName: "'rdp.desktop_height'"
+        - currentName: desktop_width
+          newName: "'rdp.desktop_width'"
+        - currentName: encryption_level
+          newName: "'rdp.encryption_level'"
+        - currentName: encryption_method
+          newName: "'rdp.encryption_method'"
+        - currentName: keyboard_layout
+          newName: "'rdp.keyboard_layout'"
+        - currentName: requested_color_depth
+          newName: "'rdp.requested_color_depth'"
+        - currentName: result
+          newName: "'rdp.result'"
+        - currentName: auth_success
+          newName: "'rdp.auth_successful'"
+        - currentName: security_protocol
+          newName: "'rdp.selected_protocol'"
+        - newName: "'rdp.ssl'"
+          currentName: ssl
+        - currentName: channels_joined
+          newName: "'rdp.channels_joined'"
+        - currentName: inferences
+          newName: "'rdp.inferences'"
+        - currentName: rdpeudp_uid
+          newName: "'log.id.rdpeudp_uidp'"
+        - currentName: rdfp_string
+          newName: "'rdp.rdfp_string'"
+        - currentName: rdfp_hash
+          newName: "'rdp.rdfp_hash'"
+    groupId: ay1Erh
+  - id: comment
+    filter: "true"
+    disabled: false
+    conf:
+      comment: "Provides base mapping to ECS. Please modify the Rename function to fit
+        your needs. "
+    groupId: quTxQj
+  - id: eval
+    filter: _path.includes('dce_rpc') || __e['@path'].startsWith('dce_rpc') ||
+      sourcetype.match(/dce_rpc/)
+    disabled: false
+    conf:
+      add:
+        - name: temporary_metadata_index_name_suffix
+          value: "'dce_rpc'"
+        - disabled: false
+          name: "'network.transport'"
+          value: "'tcp'"
+        - name: "'event.category'"
+          value: "'network'"
+      remove: []
+    groupId: quTxQj
+  - id: rename
+    filter: _path.includes('dce_rpc') || __e['@path'].startsWith('dce_rpc') ||
+      sourcetype.match(/dce_rpc/)
+    disabled: false
+    conf:
+      wildcardDepth: 5
+      rename:
+        - currentName: endpoint
+          newName: "'dce_rpc.endpoint'"
+        - currentName: named_pipe
+          newName: "'dce_rpc.named_pipe'"
+        - currentName: operation
+          newName: "'dce_rpc.operation'"
+        - newName: "'dce_rpc.rtt'"
+          currentName: rtt
+    groupId: quTxQj
+  - id: eval
+    filter: _path.includes('dce_rpc') || __e['@path'].startsWith('dce_rpc') ||
+      sourcetype.match(/dce_rpc/)
+    disabled: false
+    conf:
+      add:
+        - disabled: false
+          name: "'event.duration'"
+          value: __e['dce_rpc.rtt']
+      remove:
+        - id
+    groupId: quTxQj
+  - id: comment
+    filter: "true"
+    disabled: false
+    conf:
+      comment: "Provides base mapping to ECS. Please modify the Rename function to fit
+        your needs. "
+    groupId: k9ETL4
+  - id: eval
+    filter: _path.includes('smb_files') || __e['@path'].startsWith('smb_files') ||
+      sourcetype.match(/smb_files/)
+    disabled: false
+    conf:
+      add:
+        - name: temporary_metadata_index_name_suffix
+          value: "'smb'"
+        - name: "'event.category'"
+          value: "'network'"
+        - disabled: false
+          name: "'network.transport'"
+          value: "'tcp'"
+        - name: "'event.outcome'"
+          value: "auth_success == true ? 'success' : (auth_success == false ? 'failure' :
+            'unknown')"
+        - disabled: false
+          value: client_build
+          name: "'software.original'"
+        - disabled: false
+          name: "'source.hostname'"
+          value: client_name
+      remove:
+        - id
+    groupId: k9ETL4
+  - id: rename
+    filter: _path.includes('smb_files') || __e['@path'].includes('smb_files') ||
+      sourcetype.match(/smb_files/)
+    disabled: false
+    conf:
+      wildcardDepth: 5
+      rename:
+        - currentName: uid
+          newName: "'log.id.uid'"
+        - currentName: fuid
+          newName: "'log.id.fuid'"
+        - currentName: name
+          newName: "'file.name'"
+        - currentName: path
+          newName: "'file.path'"
+        - newName: "'file.size'"
+          currentName: size
+        - newName: "'smb.action'"
+          currentName: acion
+        - newName: "'smb.previous_name'"
+          currentName: prev_name
+        - currentName: "'times.created'"
+          newName: "'file.created'"
+        - currentName: times_created
+          newName: "'file.created'"
+        - currentName: "'times.changed'"
+          newName: "'file.ctime'"
+        - currentName: times_changed
+          newName: "'file.ctime'"
+        - currentName: "'times.modified'"
+          newName: "'file.mtime'"
+        - currentName: times_modified
+          newName: "'file.mtime'"
+        - currentName: times_accessed
+          newName: "'file.accessed'"
+        - currentName: "'times.accessed'"
+          newName: "'file.accessed'"
+    groupId: k9ETL4
+  - id: eval
+    filter: "true"
+    disabled: false
+    conf:
+      add:
+        - disabled: false
+          name: "'file.accessed'"
+          value: C.Time.strftime(C.Time.strptime(__e['file.accessed'],"%Y-%m-%dT%H:%M:%S.%L",false,false),'%s.%L')
+        - disabled: false
+          name: "'file.created'"
+          value: C.Time.strftime(C.Time.strptime(__e['file.created'],"%Y-%m-%dT%H:%M:%S.%L",false,false),'%s.%L')
+        - disabled: false
+          name: "'file.ctime'"
+          value: C.Time.strftime(C.Time.strptime(__e['file.ctime'],"%Y-%m-%dT%H:%M:%S.%L",false,false),'%s.%L')
+        - disabled: false
+          name: "'file.mtime'"
+          value: C.Time.strftime(C.Time.strptime(__e['file.mtime'],"%Y-%m-%dT%H:%M:%S.%L",false,false),'%s.%L')
+      remove:
+        - id
+    groupId: k9ETL4
+  - id: comment
+    filter: "true"
+    disabled: false
+    conf:
+      comment: "Provides base mapping to ECS. Please modify the Rename function to fit
+        your needs. "
+    groupId: TI7X92
+  - id: eval
+    filter: _path.includes('smb_mapping') || __e['@path'].startsWith('smb_mappings')
+      || sourcetype.match(/smb_mappings/)
+    disabled: false
+    conf:
+      add:
+        - name: temporary_metadata_index_name_suffix
+          value: "'smb'"
+        - name: "'event.category'"
+          value: "'network'"
+        - disabled: false
+          name: "'network.transport'"
+          value: "'tcp'"
+        - disabled: false
+          name: "'file.path'"
+          value: path
+      remove:
+        - id
+    groupId: TI7X92
+  - id: rename
+    filter: _path.includes('smb_mapping') || __e['@path'].includes('smb_mapping') ||
+      sourcetype.match(/smb_mapping/)
+    disabled: false
+    conf:
+      wildcardDepth: 5
+      rename:
+        - currentName: uid
+          newName: "'log.id.uid'"
+        - currentName: native_file_system
+          newName: "'smb.native_file_system'"
+        - newName: "'smb.path'"
+          currentName: path
+        - currentName: share_type
+          newName: "'smb.share_type'"
+        - currentName: service
+          newName: "'smb.service'"
+    groupId: TI7X92
+  - id: eval
+    filter: "true"
+    disabled: false
+    conf:
+      add: []
+      remove:
+        - id
+    groupId: TI7X92
+  - id: comment
+    filter: "true"
+    disabled: false
+    conf:
+      comment: "Provides base mapping to ECS. Please modify the Rename function to fit
+        your needs. "
+    groupId: kHsgnh
+  - id: eval
+    filter: _path.includes('weird') || __e['@path'].startsWith('weird') ||
+      sourcetype.match(/weird/)
+    disabled: false
+    conf:
+      add:
+        - name: temporary_metadata_index_name_suffix
+          value: "'weird'"
+        - name: "'event.category'"
+          value: "'miscellaneous'"
+        - disabled: false
+          name: "'network.transport'"
+          value: "'tcp'"
+      remove:
+        - id
+    groupId: kHsgnh
+  - id: rename
+    filter: _path.includes('weird') || __e['@path'].includes('weird') ||
+      sourcetype.match(/weird/)
+    disabled: false
+    conf:
+      wildcardDepth: 5
+      rename:
+        - currentName: addl
+          newName: "'weird.additional_info'"
+        - newName: "'weird.name'"
+          currentName: name
+        - newName: "'weird.notice'"
+          currentName: notice
+        - newName: "'weird.peer'"
+          currentName: peer
+    groupId: kHsgnh
+  - id: eval
+    filter: "true"
+    disabled: false
+    conf:
+      add: []
+      remove:
+        - id
+    groupId: kHsgnh
+  - id: comment
+    filter: "true"
+    disabled: false
+    conf:
+      comment: "Provides base mapping to ECS. Please modify the Rename function to fit
+        your needs. "
+    groupId: Fj39lz
+  - id: eval
+    filter: _path.includes('notice') || __e['@path'].startsWith('notice') ||
+      sourcetype.match(/notice/)
+    disabled: false
+    conf:
+      add:
+        - name: temporary_metadata_index_name_suffix
+          value: "'notice'"
+        - name: "'event.category'"
+          value: "'intrusion_detection'"
+        - disabled: false
+          name: "'network.transport'"
+          value: "'tcp'"
+      remove:
+        - id
+    groupId: Fj39lz
+  - id: rename
+    filter: _path.includes('notice') || __e['@path'].includes('notice') ||
+      sourcetype.match(/notice/)
+    disabled: false
+    conf:
+      wildcardDepth: 5
+      rename:
+        - currentName: file_desc
+          newName: "'file.description'"
+        - currentName: file_mime_type
+          newName: file.mime_type
+        - newName: "'network.transport'"
+          currentName: proto
+        - newName: "'notice.actions'"
+          currentName: actions
+        - newName: "'event.severity'"
+          currentName: severity
+        - currentName: email_body_sections
+          newName: "'notice.email_body_sections'"
+        - currentName: email_delay_tokens
+          newName: "'notice.email_delay_tokens'"
+        - newName: "'notice.identifier'"
+          currentName: identifier
+        - newName: "'notice.message'"
+          currentName: msg
+        - newName: "'notice.note'"
+          currentName: note
+        - newName: "'notice.number' "
+          currentName: n
+        - newName: "'notice.peer_description'"
+          currentName: peer_descr
+        - currentName: peer_name
+          newName: "'notice.peer_name'"
+        - newName: "'notice.sub_message'"
+          currentName: sub
+        - currentName: suppress_for
+          newName: "'notice.supress_duration'"
+        - currentName: dropped
+          newName: "'notice.dropped'"
+        - newName: "'notice.src_ip'"
+          currentName: src
+        - newName: "'notice.dst_ip'"
+          currentName: dst
+        - newName: "'notice.p'"
+          currentName: p
+    groupId: Fj39lz
+  - id: eval
+    filter: "true"
+    disabled: false
+    conf:
+      add:
+        - disabled: false
+          name: "'source.ip'"
+          value: __e['notice.src_ip']
+        - disabled: false
+          name: "'destination.ip'"
+          value: __e['notice.dst_ip']
+        - disabled: false
+          name: "'destination.port'"
+          value: __e['notice.p']
+      remove:
+        - id
+    groupId: Fj39lz
+  - id: comment
+    filter: "true"
+    disabled: false
+    conf:
+      comment: "Provides base mapping to ECS. Please modify the Rename function to fit
+        your needs. "
+    groupId: zPgPLp
+  - id: eval
+    filter: _path.includes('suricata_corelight') ||
+      __e['@path'].startsWith('suricata_corelight') ||
+      sourcetype.match(/suricata_corelight/)
+    disabled: false
+    conf:
+      add:
+        - name: temporary_metadata_index_name_suffix
+          value: "'suricata'"
+        - name: "'event.category'"
+          value: "'network'"
+        - disabled: false
+          name: "'event.kind'"
+          value: "'alert'"
+        - disabled: false
+          name: "'rule.action'"
+          value: __e['alert.action']
+        - disabled: false
+          name: "'rule.category'"
+          value: __e['alert.category']
+        - disabled: false
+          name: "'rule.gid'"
+          value: __e['alert.gid']
+      remove:
+        - id
+    groupId: zPgPLp
+  - id: rename
+    filter: _path.includes('suricata_corelight') ||
+      __e['@path'].includes('suricata_corelight') ||
+      sourcetype.match(/suricata_corelight/)
+    disabled: false
+    conf:
+      wildcardDepth: 5
+      rename:
+        - currentName: "'alert.action'"
+          newName: "'rule.action'"
+        - currentName: alert_action
+          newName: "'rule.action'"
+        - currentName: "'alert.category'"
+          newName: "'rule.category'"
+        - currentName: alert_category
+          newName: "'rule.category'"
+        - currentName: "'alert.gid'"
+          newName: "'rule.gid'"
+        - currentName: alert_gid
+          newName: "'rule.gid'"
+        - currentName: "'alert.rev'"
+          newName: "'rule.version'"
+        - currentName: alert_rev
+          newName: "'rule.version'"
+        - currentName: "'alert.severity'"
+          newName: "'event.severity'"
+        - currentName: alert_severity
+          newName: "'event.severity'"
+        - currentName: "'alert.signature'"
+          newName: "'rule.name'"
+        - currentName: alert_signature
+          newName: "'rule.name'"
+        - currentName: "'alert.signature_id'"
+          newName: "'rule.id'"
+        - currentName: alert_signature_id
+          newName: "'rule.id'"
+        - newName: "'suricata.metadata'"
+          currentName: metadata
+        - currentName: community_id
+          newName: "'network.community_id'"
+        - currentName: suri_id
+          newName: "'log.id.suri_id'"
+        - currentName: service
+          newName: "'network.protocol'"
+        - currentName: flow_id
+          newName: "'log.id.flow_id'"
+        - newName: "'log.id.tx_id'"
+          currentName: tx_id
+        - currentName: pcap_cnt
+          newName: "'suricata.pcap_count'"
+    groupId: zPgPLp
+  - id: eval
+    filter: "true"
+    disabled: false
+    conf:
+      add:
+        - name: "'@timestamp'"
+          value: "ts ? ts : new Date(_time*1000).toISOString()"
+        - name: "'@path'"
+          value: temporary_metadata_index_name_suffix
+      remove:
+        - _raw
+        - _path
+        - cribl_breaker
+        - temporary_metadata_index_name_suffix
+    description: Final shaping
+groups:
+  abJQ24:
+    name: Conn
+    index: 2
+    disabled: false
+    description: Applies to conn traffic. _path == 'conn'
+  xWHwRp:
+    name: Intel
+    disabled: false
+    index: 3
+  fhmp4N:
+    name: DNS
+    index: 4
+    description: This will apply to dns traffic. _path == 'dns'
+    disabled: false
+  2XD4ie:
+    name: SSL
+    index: 5
+    disabled: false
+  K0doNn:
+    name: HTTP
+    index: 6
+    disabled: false
+  pCGnoD:
+    name: SSH
+    index: 7
+    disabled: false
+  Z0ZufB:
+    name: x509
+    description: Applies to conn traffic. _path == 'x509'
+    index: 8
+    disabled: false
+  8lRhdX:
+    name: Files
+    description: Applies to conn traffic. _path == 'files'
+    index: 9
+    disabled: false
+  kx1TsZ:
+    name: Stepping
+    description: SSH Stepping Stones
+    index: 10
+    disabled: false
+  ay1Erh:
+    name: RDP
+    index: 11
+    disabled: false
+  quTxQj:
+    name: DCE_RPC
+    index: 12
+    disabled: false
+  k9ETL4:
+    name: SMB_Files
+    index: 13
+    disabled: false
+  TI7X92:
+    name: SMB_Mapping
+    index: 14
+    disabled: false
+  kHsgnh:
+    name: Weird
+    index: 15
+    disabled: false
+  Fj39lz:
+    name: Notice
+    index: 16
+    disabled: false
+  zPgPLp:
+    name: Suricata
+    index: 17
+    disabled: false
+asyncFuncTimeout: 1000
+description: "ECS Compliance for all Corelight data types "

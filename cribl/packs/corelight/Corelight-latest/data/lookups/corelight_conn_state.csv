@@ -1,0 +1,14 @@
+code," activity_id"," activity_name"," status_id"," status_code"," status",state
+S0,0,Open,1,0,0,"Connection attempt seen, no reply"
+S1,1,Open,1,0,Success,"Connection established, not terminated"
+SF,6,Traffic,1,0,Success,Normal esablish & termination (>0 byte counts)
+REJ,5,Fail,2,0,Failure,Connection attemp rejected
+S2,1,Open,1,0,Success,Connection established and close attempt by originator seen (but no reply from responder)
+S3,1,Open,1,0,Success,"Established, Resp attempts close, no reply from Orig"
+RSTO,3,Reset,2,0,Failure,"Established, Org aborted (RST)"
+RSTR,3,Reset,2,0,Failure,"Established, Resp aborted (RST)"
+RSTOS0,3,Reset,2,0,Failure,Orig sent SYN then RST; no Resp SYN-ACK
+RSTRH,3,Reset,2,0,Failure,Resp sent SYN-ACK then RST; no Orig SYN
+SH,4,Fail,2,0,Failure,"Orig sent SYN then FIN; no Resp SYN-ACK "
+SHR,2,Close,1,0,Success,Resp sent SYN-ACK then FIN; no Orig SYN
+OTH,99,Other,99,0,Other,"No SYN, not closed. Midstream traffic. Partial connection."

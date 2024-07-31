@@ -1,0 +1,53 @@
+identifier,side,description
+H,Orig,hello request
+C,Orig,client hello
+S,Orig,server hello
+V,Orig,hello verify request
+T,Orig,NewSessionTicket
+X,Orig,certificate
+K,Orig,server key exchange
+R,Orig,certificate request
+N,Orig,server hello done
+Y,Orig,certificate verify
+G,Orig,client key exchange
+F,Orig,finished
+W,Orig,certificate url
+U,Orig,certificate status
+A,Orig,supplemental data
+Z,Orig,unassigned handshake type
+I,Orig,change cipher spec
+B,Orig,heartbeat
+D,Orig,application data
+E,Orig,end of early data
+O,Orig,encrypted extensions
+P,Orig,key update
+M,Orig,message hash
+J,Orig,hello retry request
+L,Orig,alert
+Q,Orig,unknown content type
+h,Resp,hello request
+c,Resp,client hello
+s,Resp,server hello
+v,Resp,hello verify request
+t,Resp,NewSessionTicket
+x,Resp,certificate
+k,Resp,server key exchange
+r,Resp,certificate request
+n,Resp,server hello done
+y,Resp,certificate verify
+g,Resp,client key exchange
+f,Resp,finished
+w,Resp,certificate url
+u,Resp,certificate status
+a,Resp,supplemental data
+z,Resp,unassigned handshake type
+i,Resp,change cipher spec
+b,Resp,heartbeat
+d,Resp,application data
+e,Resp,end of early data
+o,Resp,encrypted extensions
+p,Resp,key update
+m,Resp,message hash
+j,Resp,hello retry request
+l,Resp,alert
+q,Resp,unknown content type

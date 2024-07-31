@@ -1,0 +1,92 @@
+W6y4ah:
+  sampleName: CL_Conn_300.log
+  description: Collection of 300 events in several formats from a Corelight Sensor
+  created: 1683362541929
+  size: 553441
+  numEvents: 300
+ySqXH4:
+  sampleName: CL_SSL_300.log
+  description: Collection of 300 SSL events in several formats from a Corelight Sensor
+  created: 1683362703619
+  size: 476138
+  numEvents: 300
+YbZd6a:
+  sampleName: CL_DNS_300_old.log
+  description: Collection of 300 DNS events in several formats from a Corelight Sensor
+  created: 1683362788926
+  size: 465835
+  numEvents: 300
+6xie7G:
+  sampleName: CL_HTTP_300.log
+  description: Collection of 300 Corelight log samples from http.log in JSON,
+    Syslog and TSV formats
+  created: 1683362998935
+  size: 497420
+  numEvents: 300
+L6Ht4d:
+  sampleName: CL_Files_300.log
+  created: 1689867425235
+  size: 449137
+  numEvents: 300
+  description: Collection of 300 Corelight log samples from files.log in JSON format
+  tags: files.log
+lovjjY:
+  sampleName: CL_Suricata_11.log
+  created: 1689891261381
+  size: 9771
+  numEvents: 11
+  description: Suricata Corelight Logs - From Corelight sensor in JSON Format
+7ttLqE:
+  sampleName: CL_NTP_300.log
+  created: 1689869387193
+  size: 414027
+  numEvents: 300
+  description: Collection of 300 NTP events in JSON format from a Corelight Sensor
+tuthEI:
+  sampleName: CL_X509_17.log
+  created: 1690325069193
+  size: 41545
+  numEvents: 17
+  description: x509 Logs from Corelight Sensor - JSON format
+zn6GMH:
+  sampleName: CL_Weird_200.log
+  created: 1684374773835
+  size: 174527
+  numEvents: 200
+  description: Collection of 200 Corelight log samples from weird.log in JSON format
+xFvedP:
+  sampleName: CL_RDP_10.log
+  created: 1684370111552
+  size: 11475
+  numEvents: 10
+  description: Collection of 19 Corelight log samples from rdp.log in JSON format
+fcA9oF:
+  sampleName: CL_Intel_100.log
+  created: 1693512787093
+  size: 110569
+  numEvents: 100
+  description: 100 Intel events from a Corelight Sensor
+vTEUVq:
+  sampleName: CL_DCE_RPC_100.log
+  created: 1693512841152
+  size: 87633
+  numEvents: 100
+  description: Collection of 100 dce_rpc logs from a Corelight Sensor - JSON
+7ch4cf:
+  sampleName: CL_SSH_100.log
+  created: 1693935375873
+  size: 500943
+  numEvents: 100
+  description: 100 SSH events from a Corelight Sensor
+a0e1ta:
+  sampleName: CL_SMB_Files_&_Mappings_94.log
+  created: 1689615272876
+  size: 84529
+  numEvents: 94
+  description: Collection of SMB files and mapping logs from Corelight Sensor
+08cJaw:
+  sampleName: CL_Notice_200.log
+  created: 1690318603764
+  size: 311581
+  numEvents: 225
+  description: Collection of 225 Notice logs from a Corelight Sensor

@@ -1,0 +1,397 @@
+output: default
+streamtags: []
+groups:
+  3JOA8k:
+    name: Parse & Trim
+    description: Parse data and remove fields that are not desired for sending to
+      destination
+    index: 1
+    disabled: false
+  2o22xv:
+    name: Splunk  Common Information Module (CIM)
+    index: 3
+    disabled: true
+    description: Splunk CIM based on the Network Traffic Data Model
+  kEXHMA:
+    name: Elastic Common Schema (ECS)
+    description: Elasticsearch ECS normalization
+    disabled: true
+    index: 4
+  eFy7UD:
+    name: MS Sentinel mappings
+    description: Mapping to MS Sentinel Fields - Sentinel name, Asim & Suffixed name formats
+    index: 5
+    disabled: true
+  21TdTc:
+    name: Chronicle Unified Data Model (UDM)
+    disabled: true
+    index: 6
+  ZGkPkS:
+    name: Cleanup
+    disabled: true
+    index: 8
+    description: Serialization and removal of selected fields to be send to its
+      destination(s).
+asyncFuncTimeout: 1000
+functions:
+  - id: comment
+    filter: "true"
+    disabled: null
+    conf:
+      comment: >-
+        ***** IMPORTANT: 
+
+        The 'Catch All' pipeline is designed to handle any data originating from Corelight Sensors via Cribl Workers that hasn't been explicitly routed to a dedicated pipeline. Its primary role is to parse and/or normalize the incoming data to align with the Data Models provided in this Pack. It's important to note that this pipeline does not offer any additional enrichment or reduction functionalities.
+
+
+        Important Guidelines:
+
+        For each distinct dataset or log type identified, it is recommended to establish a dedicated pipeline.
+
+        Refrain from using the 'Catch All' pipeline for data not referenced in the primary routes such as "Corelight Pack main routes by dataset" or "Corelight Alerts."
+  - id: comment
+    filter: "true"
+    disabled: false
+    conf:
+      comment: >-
+        Data Format Identification: This function clarifies the data formats
+        that are being ingested into the pipeline. The pipeline supports a
+        variety of formats, including TSV (Tab-Separated Values), JSON
+        (JavaScript Object Notation), Elasticsearch, as well as various agents
+        like Splunk UF, Filebeats, and Cribl Edge. Additionally, sources like
+        HEC (HTTP Event Collector) and Syslog are also supported.
+
+
+        It's important to note that the variable Var.log_format() is defined within the Knowledge Base under Global Variables, specifically within the log_format category within this Pack.
+    groupId: 3JOA8k
+  - id: eval
+    filter: "true"
+    disabled: false
+    conf:
+      add:
+        - disabled: false
+          name: log_format
+          value: C.vars.log_format()
+      keep:
+        - "*"
+    groupId: 3JOA8k
+    description: "Creates an internal field identifier for the log format coming
+      through (tsv, csv, json, elastic, etc.) "
+  - id: comment
+    filter: "true"
+    disabled: false
+    conf:
+      comment: "Handling Raw Syslog Data: In cases where the ingested data comprises
+        raw syslog messages without prior preprocessing, the objective is to
+        parse these messages into distinct fields that can subsequently be
+        utilized by the subsequent functions in the pipeline. This parsing
+        process transforms the unprocessed syslog messages into structured data
+        for effective downstream processing."
+    groupId: 3JOA8k
+  - id: serde
+    filter: log_format == 'syslog'
+    disabled: false
+    conf:
+      mode: extract
+      type: csv
+      srcField: message
+      cleanFields: true
+      allowedKeyChars: []
+      allowedValueChars: []
+      keep: []
+      remove:
+        - message
+        - raw_mgmt
+    groupId: 3JOA8k
+    description: Keep this function enabled
+    final: false
+  - id: comment
+    filter: "true"
+    disabled: false
+    conf:
+      comment: >-
+        Processing TSV Formatted Data: In scenarios where the ingested data
+        follows the TSV (Tab-Separated Values) format, the procedure involves
+        extracting all available fields using the CL_Conn parser from the
+        Knowledge section within this Pack. It's important to note that the
+        effectiveness of this parser is influenced by the manner in which TSV
+        headers are transmitted from the Corelight sensor.
+
+
+        It's advised to meticulously validate both the types and order of fields being received. This validation process enables you to make necessary adjustments to the existing parser (CL_Conn), such as adding, removing, or reordering fields. This ensures that the parser accurately interprets the TSV data and facilitates seamless downstream processing.
+    groupId: 3JOA8k
+  - id: serde
+    filter: log_format == 'TSV'
+    disabled: false
+    conf:
+      mode: extract
+      type: delim
+      delimChar: \t
+      quoteChar: '"'
+      escapeChar: \
+      nullValue: "-"
+      srcField: _raw
+      fields:
+        - ts
+        - fingerprint
+        - certificate.version
+        - certificate.serial
+        - certificate.subject
+        - certificate.issuer
+        - certificate.not_valid_before
+        - certificate.not_valid_after
+        - certificate.key_alg
+        - certificate.sig_alg
+        - certificate.key_type
+        - certificate.key_length
+        - certificate.exponent
+        - certificate.curve
+        - san.dns
+        - san.uri
+        - san.email
+        - san.ip
+        - basic_constraints_ca
+        - basic_constraints_path_len
+        - host_cert
+        - client_cert
+    groupId: 3JOA8k
+    description: Optional - This parser function depends on how TSV headers are
+      being sent from the Sensor. Validate the types and fields order to add,
+      remove or reorder the fields in the current parser (CL_Conn)
+  - id: comment
+    filter: "true"
+    disabled: false
+    conf:
+      comment: "Processing Data from HEC Token Format and Agents: In situations where
+        the data is ingested through HEC token formats (e.g., Splunk HEC or HTTP
+        HEC) or is sourced from agents (such as log shippers like Splunk UF,
+        Filebeats or Cribl Edge), the process involves extracting all available
+        fields from the incoming data. This step ensures that the relevant
+        information contained within the data is effectively captured for
+        subsequent processing by the pipeline."
+    groupId: 3JOA8k
+  - id: serde
+    filter: log_format == 'HEC' || log_format == 'Agent'
+    disabled: false
+    conf:
+      mode: extract
+      type: json
+      srcField: _raw
+    groupId: 3JOA8k
+  - id: auto_timestamp
+    filter: "true"
+    disabled: false
+    conf:
+      srcField: ts
+      dstField: _time
+      defaultTimezone: UTC
+      timeExpression: time.getTime() / 1000
+      offset: 0
+      maxLen: 150
+      defaultTime: now
+      latestDateAllowed: +1week
+      earliestDateAllowed: -420weeks
+    groupId: 3JOA8k
+  - id: comment
+    filter: "true"
+    disabled: false
+    conf:
+      comment: "Validation and Addition of Index and Source Type Fields: This process
+        entails checking for the presence of both the Index and Source Type
+        fields within the data. In instances where these fields are absent, the
+        function takes corrective action by incorporating them based on
+        information from the data source itself and/or the predefined Global
+        Variables within the Knowledge / Global Variables section of this Pack.
+        This validation and augmentation mechanism ensures that essential
+        indexing and categorization attributes are included as required."
+    groupId: 3JOA8k
+  - id: eval
+    filter: "true"
+    disabled: false
+    conf:
+      add:
+        - value: index || C.vars.index.concat('_x509')
+          name: index
+        - name: sourcetype
+          value: sourcetype || 'corelight_'.concat(_path || __e['@path'])
+        - disabled: true
+          name: host
+          value: _system_name
+      remove:
+        - message
+        - log_format
+    groupId: 3JOA8k
+    description: Define Index and source types - Index Var defined in Knowledge /
+      Global Variables
+  - id: comment
+    filter: "true"
+    disabled: null
+    conf:
+      comment: >-
+        Compliance Options - CIM, ECS, MS Sentinel and Chronicle Unified Data
+        Model (UDM):
+
+        CIM (Common Information Model):
+
+        Splunk CIM Sourcetype to Data Model Mapping:
+
+        corelight_conn maps to Network_Sessions
+
+        corelight_conn maps to Network_Traffic
+
+        corelight_dhcp maps to Network_Sessions
+
+        corelight_dns maps to Network_Resolution
+
+        corelight_http maps to Web
+
+        corelight_smtp maps to Email
+
+        corelight_ssl maps to Certificates
+
+
+        ECS (Elastic Common Schema):
+
+        A unified chained pipeline CL_ECS-Chained covers: conn, dns, ssl, http, SSH, SSL, x509, Files, Stepping, RDP, DCE_RDP, SMB_Files, SMB_Mapping, Weird, Notice, Suricata Corelight datasets / log-types.
+
+
+        MS Sentinel:
+
+        Covers Sentinel Name, Asim and Suffixed name Formats
+
+        All datasets are linked via the Sentinel_cols_mappings.csv table.
+
+
+        OCSF (Open Cybersecurity Schema Framework) - Network Activity [4001] Class:
+  - id: comment
+    filter: "true"
+    disabled: true
+    conf:
+      comment: "Uses a Chain function to call another pipeline depending on each
+        log-type and destination Data Model in Splunk. "
+    groupId: 2o22xv
+  - id: chain
+    filter: "true"
+    disabled: true
+    conf:
+      processor: CIM_Certificates-Chained
+    groupId: 2o22xv
+  - id: comment
+    filter: "true"
+    disabled: true
+    conf:
+      comment: "Uses a Chain function to call another pipeline (corelight_ecs) which
+        will process the data. "
+    groupId: kEXHMA
+  - id: chain
+    filter: "true"
+    disabled: true
+    conf:
+      processor: CL_ECS-Chained
+    groupId: kEXHMA
+  - id: comment
+    filter: "true"
+    disabled: true
+    conf:
+      comment: "Attention: Select one of the three options"
+    groupId: eFy7UD
+  - id: comment
+    filter: "true"
+    disabled: true
+    conf:
+      comment: Sentinel name format
+    groupId: eFy7UD
+  - id: rename
+    filter: C.Lookup('Sentinel_cols_mapping.csv','dataset').match(_path)
+    disabled: true
+    conf:
+      wildcardDepth: 4
+      renameExpr: C.Lookup('Sentinel_cols_mapping.csv', 'json_name').match(name,
+        'sentinel_name')
+      baseFields: []
+      rename: []
+    groupId: eFy7UD
+  - id: comment
+    filter: "true"
+    disabled: true
+    conf:
+      comment: Asim format
+    groupId: eFy7UD
+  - id: rename
+    filter: C.Lookup('Sentinel_cols_mapping.csv','dataset').match(_path)
+    disabled: true
+    conf:
+      wildcardDepth: 4
+      renameExpr: C.Lookup('Sentinel_cols_mapping.csv', 'json_name').match(name,
+        'asim_name')
+      baseFields: []
+      rename: []
+    groupId: eFy7UD
+  - id: comment
+    filter: "true"
+    disabled: true
+    conf:
+      comment: Suffixed name format
+    groupId: eFy7UD
+  - id: rename
+    filter: C.Lookup('Sentinel_cols_mapping.csv','dataset').match(_path)
+    disabled: true
+    conf:
+      wildcardDepth: 4
+      renameExpr: C.Lookup('Sentinel_cols_mapping.csv', 'json_name').match(name,
+        'suffixed_name')
+      baseFields: []
+      rename: []
+    groupId: eFy7UD
+  - id: chain
+    filter: "true"
+    disabled: true
+    conf:
+      processor: CL_Chronicle_Chained
+    groupId: 21TdTc
+  - id: comment
+    filter: "true"
+    disabled: null
+    conf:
+      comment: >-
+        Cleanup Functions and Serialization:
+
+        In the cleanup phase, the serialization process determines the fields that are retained within the `_raw` field. This decision influences the event size, contingent on the number of fields retained or removed, as well as the chosen serialization method. The serialization options include JSON, Key-Value Pair, and CSV formats. The selection of serialization type impacts the data structure and, subsequently, the overall size of the event. 
+
+        Careful consideration is advised to strike a balance between event comprehensiveness and efficient data storage.
+  - id: serialize
+    filter: "true"
+    disabled: true
+    conf:
+      type: kvp
+      fields:
+        - "!_*"
+        - "!index"
+        - "!sourcetype"
+        - "!cribl*"
+        - "!history_description"
+        - "*"
+      dstField: _raw
+      cleanFields: true
+      delimChar: ","
+      quoteChar: '"'
+      escapeChar: \
+      nullValue: "-"
+    groupId: ZGkPkS
+    description: Fields to serialize selected based on each environment selection.
+      Negating a field must happens before each field name to be serialized.
+      Accepts wildcards
+  - id: eval
+    filter: _path.includes('fiels') || __e['@path'].startsWith('files') ||
+      sourcetype.match(/files/)
+    disabled: true
+    conf:
+      remove:
+        - "*"
+      keep:
+        - _raw
+        - index
+        - sourcetype
+    description: Cleanup - Remove fields (extracted an in the event) or keep fields
+      to be sent to its destination(s).
+    groupId: ZGkPkS

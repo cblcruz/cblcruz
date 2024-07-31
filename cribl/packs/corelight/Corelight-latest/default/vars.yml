@@ -1,0 +1,28 @@
+outputModel:
+  type: string
+  lib: custom
+  value: "'cim'"
+index:
+  type: string
+  lib: custom
+  description: Use this to standardize an index naming convention. Pipelines that
+    add an index name will use this name and concatenate the appropriate type.
+  value: "'corelight'"
+redis_server:
+  type: any
+  lib: custom
+  value: '"34.208.185.149"'
+  description: IP Address or FQDN of your Redis Server
+log_format:
+  type: expression
+  lib: custom
+  value: "_raw.match(/.*\\t/) ? 'TSV' : (_path ? 'json' : __e['@path'] ? 'elastic'
+    : (_raw.match(/<\\d+>/) ? 'syslog' : (_raw.match(/\\d{10}.\\d{6},/)) ?
+    'Agent' : (JSON.parse(_raw) ? 'HEC' : 'general')))"
+  args:
+    - type: string
+      name: log_format
+metric_index:
+  type: any
+  lib: custom
+  value: corelight_metrics

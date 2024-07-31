@@ -1,0 +1,57 @@
+output: default
+streamtags: []
+groups: {}
+asyncFuncTimeout: 1000
+functions:
+  - id: eval
+    filter: "true"
+    disabled: null
+    conf:
+      add:
+        - disabled: false
+          name: ids_type
+          value: "'network'"
+        - disabled: false
+          name: severity
+          value: "__e['alert.severity'] == 0 ? 'informational' : __e['alert.severity'] ==
+            1 ? 'critical' : __e['alert.severity'] == 2 ? 'medium' :
+            __e['alert.severity'] == 3 ? 'low': 'unknown'"
+  - id: rename
+    filter: "true"
+    disabled: false
+    conf:
+      wildcardDepth: 5
+      rename:
+        - currentName: "'id.orig_h'"
+          newName: src
+        - currentName: id_orig_h
+          newName: src
+        - currentName: "'id.orig_p'"
+          newName: src_port
+        - currentName: id_orig_p
+          newName: src_port
+        - newName: dest
+          currentName: "'id.resp_h'"
+        - currentName: id_resp_h
+          newName: dest
+        - currentName: "'id.resp_p'"
+          newName: dest_port
+        - newName: dest_port
+          currentName: id_resp_p
+        - currentName: "'alert.action'"
+          newName: action
+        - currentName: "'alert.category'"
+          newName: category
+        - currentName: "'alert.signature'"
+          newName: signature
+        - currentName: "'alert.signature_id'"
+          newName: signature_id
+        - currentName: "'alert.severity'"
+          newName: severity_id
+        - currentName: system_name
+          newName: dvc
+        - currentName: suri_id
+          newName: id
+        - currentName: uid
+          newName: session_id
+description: CIM Compliance for the Web Data Model from Splunk

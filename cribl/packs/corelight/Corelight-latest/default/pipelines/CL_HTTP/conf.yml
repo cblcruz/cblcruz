@@ -1,0 +1,908 @@
+output: default
+streamtags: []
+groups:
+  3JOA8k:
+    name: Parse & Trim
+    description: Parse data and remove fields that are not desired for sending to
+      destination
+    index: 1
+    disabled: true
+  f0vO7W:
+    name: Parse & Trim
+    description: Parse data and remove fields that are not desired for sending to
+      destination
+    disabled: false
+    index: 2
+  PmMnc1:
+    name: "Enrichment "
+    description: "Basic enrichment functions "
+    disabled: false
+    index: 3
+  Z8Hpz8:
+    name: Reduction
+    disabled: true
+    index: 4
+    description: Baseline for Reduction use cases
+  YfqmCs:
+    name: UID Correlation across all log types
+    index: 6
+    disabled: true
+  2o22xv:
+    name: Splunk  Common Information Module (CIM)
+    index: 8
+    disabled: true
+    description: Splunk CIM based on the WEB Data Model
+  kEXHMA:
+    name: Elastic Common Schema (ECS)
+    description: Elasticsearch ECS normalization
+    disabled: true
+    index: 9
+  JNyVzo:
+    name: MS Sentinel mappings
+    description: Mapping to MS Sentinel Fields - Sentinel name, Asim & Suffixed name formats
+    index: 10
+    disabled: true
+  LvArrv:
+    name: Chronicle Unified Data Model (UDM)
+    disabled: true
+    index: 11
+  ZGkPkS:
+    name: Cleanup
+    disabled: true
+    index: 13
+asyncFuncTimeout: 1000
+functions:
+  - id: comment
+    filter: "true"
+    disabled: null
+    conf:
+      comment: "HTTP Logs: Initial Parse, Enrichment and Reduction functions"
+  - id: comment
+    filter: "true"
+    disabled: true
+    conf:
+      comment: >-
+        Data Format Identification: This function clarifies the data formats
+        that are being ingested into the pipeline. The pipeline supports a
+        variety of formats, including TSV (Tab-Separated Values), JSON
+        (JavaScript Object Notation), Elasticsearch, as well as various agents
+        like Splunk UF, Filebeats, and Cribl Edge. Additionally, sources like
+        HEC (HTTP Event Collector) and Syslog are also supported.
+
+
+        It's important to note that the variable Var.log_format() is defined within the Knowledge Base under Global Variables, specifically within the log_format category within this Pack.
+    groupId: 3JOA8k
+  - id: eval
+    filter: "true"
+    disabled: true
+    conf:
+      add:
+        - disabled: false
+          name: log_format
+          value: C.vars.log_format()
+      keep:
+        - "*"
+    description: "Creates an internal field identifier for the log format coming
+      through (tsv, csv, json, elastic, etc.) "
+    groupId: 3JOA8k
+  - id: comment
+    filter: "true"
+    disabled: true
+    conf:
+      comment: "Handling Raw Syslog Data: In cases where the ingested data comprises
+        raw syslog messages without prior preprocessing, the objective is to
+        parse these messages into distinct fields that can subsequently be
+        utilized by the subsequent functions in the pipeline. This parsing
+        process transforms the unprocessed syslog messages into structured data
+        for effective downstream processing."
+    groupId: 3JOA8k
+  - id: serde
+    filter: log_format == 'syslog'
+    disabled: true
+    conf:
+      mode: extract
+      type: csv
+      srcField: message
+      cleanFields: true
+      allowedKeyChars: []
+      allowedValueChars: []
+      keep: []
+      remove:
+        - message
+        - raw_mgmt
+    groupId: 3JOA8k
+  - id: comment
+    filter: "true"
+    disabled: true
+    conf:
+      comment: >-
+        Processing TSV Formatted Data: In scenarios where the ingested data
+        follows the TSV (Tab-Separated Values) format, the procedure involves
+        extracting all available fields using the CL_Conn parser from the
+        Knowledge section within this Pack. It's important to note that the
+        effectiveness of this parser is influenced by the manner in which TSV
+        headers are transmitted from the Corelight sensor.
+
+
+        It's advised to meticulously validate both the types and order of fields being received. This validation process enables you to make necessary adjustments to the existing parser (CL_Conn), such as adding, removing, or reordering fields. This ensures that the parser accurately interprets the TSV data and facilitates seamless downstream processing.
+    groupId: 3JOA8k
+  - id: serde
+    filter: log_format == 'TSV'
+    disabled: true
+    conf:
+      mode: extract
+      type: delim
+      delimChar: \t
+      quoteChar: '"'
+      escapeChar: \
+      nullValue: "-"
+      srcField: _raw
+      fields:
+        - ts
+        - uid
+        - id.orig_h
+        - id.orig_p
+        - id.resp_h
+        - id.resp_p
+        - trans_depth
+        - method
+        - host
+        - uri
+        - version
+        - user_agent
+        - request_body_len
+        - response_body_len
+        - status_code
+        - status_msg
+        - tags
+        - resp_fuids
+        - resp_mime_types
+    description: Optional - This parser function depends on how TSV headers are
+      being sent from the Sensor. Validate the types and fields order to add,
+      remove or reorder the fields in the current parser (CL_Conn)
+    groupId: 3JOA8k
+  - id: comment
+    filter: "true"
+    disabled: true
+    conf:
+      comment: "Selective Event Filtering: The objective here is to filter out events
+        that do not match the Corelight dataset or log-type being ingested to
+        this pipeline, ensuring that only events of this specific type are
+        directed for processing within this dedicated pipeline. By implementing
+        this filter, the pipeline exclusively processes events that adhere to
+        the defined dataset or log-type, optimizing the relevance and efficiency
+        of the processing workflow."
+    groupId: 3JOA8k
+  - id: drop
+    filter: "!_path.startsWith('http') && !__e['@path'].startsWith('http') &&
+      !sourcetype.includes('http')"
+    disabled: true
+    conf: {}
+    groupId: 3JOA8k
+  - id: auto_timestamp
+    filter: "true"
+    disabled: true
+    conf:
+      srcField: ts
+      dstField: _time
+      defaultTimezone: local
+      timeExpression: time.getTime() / 1000
+      offset: 0
+      maxLen: 150
+      defaultTime: now
+      latestDateAllowed: +1week
+      earliestDateAllowed: -420weeks
+    groupId: 3JOA8k
+  - id: comment
+    filter: "true"
+    disabled: true
+    conf:
+      comment: "Validation and Addition of Index and Source Type Fields: This process
+        entails checking for the presence of both the Index and Source Type
+        fields within the data. In instances where these fields are absent, the
+        function takes corrective action by incorporating them based on
+        information from the data source itself and/or the predefined Global
+        Variables within the Knowledge / Global Variables section of this Pack.
+        This validation and augmentation mechanism ensures that essential
+        indexing and categorization attributes are included as required."
+    groupId: 3JOA8k
+  - id: eval
+    filter: "true"
+    disabled: true
+    conf:
+      add:
+        - value: index || C.vars.index.concat('_http')
+          name: index
+        - name: sourcetype
+          value: sourcetype || 'corelight_'.concat(_path || __e['@path'])
+        - disabled: false
+          name: http_host
+          value: host
+        - disabled: false
+          name: host
+          value: _system_name
+      remove:
+        - log_format
+        - _system_name
+    groupId: 3JOA8k
+    description: Define Index and source types
+  - id: comment
+    filter: "true"
+    disabled: false
+    conf:
+      comment: >-
+        Data Format Identification: This function clarifies the data formats
+        that are being ingested into the pipeline. The pipeline supports a
+        variety of formats, including TSV (Tab-Separated Values), JSON
+        (JavaScript Object Notation), Elasticsearch, as well as various agents
+        like Splunk UF, Filebeats, and Cribl Edge. Additionally, sources like
+        HEC (HTTP Event Collector) and Syslog are also supported.
+
+
+        It's important to note that the variable Var.log_format() is defined within the Knowledge Base under Global Variables, specifically within the log_format category within this Pack.
+    groupId: f0vO7W
+  - id: eval
+    filter: "true"
+    disabled: false
+    conf:
+      add:
+        - disabled: false
+          name: log_format
+          value: C.vars.log_format()
+    final: false
+    groupId: f0vO7W
+  - id: comment
+    filter: "true"
+    disabled: false
+    conf:
+      comment: "Handling Raw Syslog Data: In cases where the ingested data comprises
+        raw syslog messages without prior preprocessing, the objective is to
+        parse these messages into distinct fields that can subsequently be
+        utilized by the subsequent functions in the pipeline. This parsing
+        process transforms the unprocessed syslog messages into structured data
+        for effective downstream processing."
+    groupId: f0vO7W
+  - id: serde
+    filter: log_format == 'syslog'
+    disabled: false
+    conf:
+      mode: extract
+      type: csv
+      srcField: message
+      delimChar: \t
+      quoteChar: '"'
+      escapeChar: \
+      nullValue: "-"
+      cleanFields: true
+      allowedKeyChars: []
+      allowedValueChars: []
+      keep: []
+      remove:
+        - raw_mgmt
+      fields: []
+    groupId: f0vO7W
+    description: Keep this function enabled
+    final: false
+  - id: comment
+    filter: "true"
+    disabled: false
+    conf:
+      comment: >-
+        Processing TSV Formatted Data: In scenarios where the ingested data
+        follows the TSV (Tab-Separated Values) format, the procedure involves
+        extracting all available fields using the CL_Conn parser from the
+        Knowledge section within this Pack. It's important to note that the
+        effectiveness of this parser is influenced by the manner in which TSV
+        headers are transmitted from the Corelight sensor.
+
+
+        It's advised to meticulously validate both the types and order of fields being received. This validation process enables you to make necessary adjustments to the existing parser (CL_Conn), such as adding, removing, or reordering fields. This ensures that the parser accurately interprets the TSV data and facilitates seamless downstream processing.
+    groupId: f0vO7W
+  - id: serde
+    filter: log_format == 'TSV'
+    disabled: false
+    conf:
+      mode: extract
+      type: delim
+      delimChar: \t
+      quoteChar: '"'
+      escapeChar: \
+      nullValue: "-"
+      srcField: _raw
+      fields:
+        - ts
+        - uid
+        - id.orig_h
+        - id.orig_p
+        - id.resp_h
+        - id.resp_p
+        - proto
+        - service
+        - duration
+        - orig_bytes
+        - resp_bytes
+        - conn_state
+        - local_orig
+        - local_resp
+        - missed_bytes
+        - history
+        - orig_pkts
+        - orig_ip_bytes
+        - resp_pkts
+        - resp_ip_bytes
+        - tunnel_parents
+    groupId: f0vO7W
+    description: Optional - This parser function depends on how TSV headers are
+      being sent from the Sensor. Validate the types and fields order to add,
+      remove or reorder the fields in the current parser (CL_Conn)
+  - id: comment
+    filter: "true"
+    disabled: false
+    conf:
+      comment: "Processing Data from HEC Token Format and Agents: In situations where
+        the data is ingested through HEC token formats (e.g., Splunk HEC or HTTP
+        HEC) or is sourced from agents (such as log shippers like Splunk UF,
+        Filebeats or Cribl Edge), the process involves extracting all available
+        fields from the incoming data. This step ensures that the relevant
+        information contained within the data is effectively captured for
+        subsequent processing by the pipeline."
+    groupId: f0vO7W
+  - id: serde
+    filter: log_format == 'HEC' || log_format == 'Agent'
+    disabled: false
+    conf:
+      mode: extract
+      type: json
+      srcField: _raw
+    groupId: f0vO7W
+  - id: comment
+    filter: "true"
+    disabled: false
+    conf:
+      comment: "Selective Event Filtering: The objective here is to filter out events
+        that do not match the Corelight dataset or log-type being ingested to
+        this pipeline, ensuring that only events of this specific type are
+        directed for processing within this dedicated pipeline. By implementing
+        this filter, the pipeline exclusively processes events that adhere to
+        the defined dataset or log-type, optimizing the relevance and efficiency
+        of the processing workflow."
+    groupId: f0vO7W
+  - id: drop
+    filter: "!_path.startsWith('conn') && !__e['@path'].startsWith('conn') &&
+      !sourcetype.includes('conn')"
+    disabled: false
+    conf: {}
+    groupId: f0vO7W
+    description: Drops events that are NOT of the conn log-type
+  - id: drop
+    filter: _path.includes('_red') || __e['@path'].includes('_red') ||
+      sourcetype.match(/_red/)
+    disabled: false
+    conf: {}
+    groupId: f0vO7W
+    description: Optional removal of conn_red logs, will process only conn
+  - id: auto_timestamp
+    filter: "true"
+    disabled: false
+    conf:
+      srcField: _time
+      dstField: _time
+      defaultTimezone: UTC
+      timeExpression: time.getTime() / 1000
+      offset: 0
+      maxLen: 150
+      defaultTime: now
+      latestDateAllowed: +1week
+      earliestDateAllowed: -420weeks
+    groupId: f0vO7W
+  - id: comment
+    filter: "true"
+    disabled: false
+    conf:
+      comment: "Validation and Addition of Index and Source Type Fields: This process
+        entails checking for the presence of both the Index and Source Type
+        fields within the data. In instances where these fields are absent, the
+        function takes corrective action by incorporating them based on
+        information from the data source itself and/or the predefined Global
+        Variables within the Knowledge / Global Variables section of this Pack.
+        This validation and augmentation mechanism ensures that essential
+        indexing and categorization attributes are included as required."
+    groupId: f0vO7W
+  - id: eval
+    filter: "true"
+    disabled: false
+    conf:
+      add:
+        - value: C.vars.index.concat('_conn')
+          name: index
+        - name: sourcetype
+          value: sourcetype || 'corelight_'.concat(_path || __e['@path'])
+        - disabled: true
+          name: host
+          value: _system_name
+      remove:
+        - message
+        - log_format
+    groupId: f0vO7W
+    description: Define Index and source types - Index Var defined in Knowledge /
+      Global Variables
+  - id: comment
+    filter: "true"
+    disabled: false
+    conf:
+      comment: Reverse DNS lookup for IP addresses
+    groupId: PmMnc1
+  - id: eval
+    filter: host.includes(':')
+    disabled: false
+    conf:
+      add:
+        - disabled: false
+          name: host_ip
+          value: host.replace(/(\d+).(\d+).(\d+).(\d+)\:\d+/,'$1.$2.$3.$4')
+    groupId: PmMnc1
+  - id: dns_lookup
+    filter: "true"
+    disabled: false
+    conf:
+      cacheTTL: 30
+      maxCacheSize: 5000
+      reverseLookupFields:
+        - inFieldName: host
+          outFieldName: host_dns_ip_lookup
+        - inFieldName: host_ip
+          outFieldName: host_dns_ip_lookup
+      dnsLookupFields: []
+    groupId: PmMnc1
+  - id: eval
+    filter: "true"
+    disabled: false
+    conf:
+      add:
+        - disabled: false
+          name: host_domain
+          value: "host_dns_ip_lookup ? host_dns_ip_lookup : host"
+      remove:
+        - host_dns_ip_lookup
+        - host_ip
+    groupId: PmMnc1
+  - id: comment
+    filter: "true"
+    disabled: false
+    conf:
+      comment: |-
+        Lookup common sites from common_sites_actions.csv
+        1. lookup common sites 
+        2. Set desired action to suppress, sample, or flag
+    groupId: PmMnc1
+  - id: lookup
+    filter: "true"
+    disabled: false
+    conf:
+      matchMode: exact
+      reloadPeriodSec: 60
+      addToEvent: false
+      inFields:
+        - eventField: host_domain
+          lookupField: host
+      ignoreCase: false
+      file: common_sites_actions.csv
+      outFields:
+        - lookupField: action
+          eventField: action
+    groupId: PmMnc1
+  - id: comment
+    filter: "true"
+    disabled: true
+    conf:
+      comment: >-
+        VERY IMPORTANT:
+
+        The decision on which fields to remove largely depends on the use case, investigative needs, and the specific environment. We can make some general recommendations for fields that might be considered "less critical" in a typical environment and could potentially be safely removed for data reduction purposes. Keep in mind, these are suggestions, and you should review and confirm based on your own requirements and validate with your team.
+    groupId: Z8Hpz8
+  - id: comment
+    filter: "true"
+    disabled: true
+    conf:
+      comment: >-
+        Drop East < > West Internal traffic
+
+        This function will drop any events that starts and ends within an internal IP range (East/West). 
+    groupId: Z8Hpz8
+  - id: drop
+    filter: C.Net.isPrivate(e__['id.orig_h']) && C.Net.isPrivate(e__['id.resp_h'])
+    disabled: true
+    conf: {}
+    description: Drops East <--> West Traffic
+    final: false
+    groupId: Z8Hpz8
+  - id: comment
+    filter: "true"
+    disabled: true
+    conf:
+      comment: Suppress & Sample events based on status_code and action from
+        common_sites_actions.csv
+    groupId: Z8Hpz8
+  - id: suppress
+    filter: status_code=="200" && action=="suppress"
+    disabled: true
+    conf:
+      allow: 1
+      suppressPeriodSec: 30
+      dropEventsMode: true
+      maxCacheSize: 50000
+      cacheIdleTimeoutPeriods: 2
+      numEventsIdleTimeoutTrigger: 10000
+      keyExpr: "`${id.orig_h}:${id.resp_h}:${id.resp_p}`"
+    groupId: Z8Hpz8
+  - id: sampling
+    filter: status_code=="200" && action=="sample"
+    disabled: true
+    conf:
+      rules:
+        - filter: "true"
+          rate: 5
+    groupId: Z8Hpz8
+  - id: comment
+    filter: "true"
+    disabled: true
+    conf:
+      comment: Aggregate count by status_code, method, and user_agent as a metric for
+        each combo of id_orig_h,id_resp_h, and id_resp_p
+    groupId: Z8Hpz8
+  - id: aggregation
+    filter: _path._path.includes('http') || __e['@path'].startsWith('http') ||
+      sourcetype.match(/http/) == 'http'
+    disabled: true
+    conf:
+      passthrough: true
+      preserveGroupBys: false
+      sufficientStatsOnly: false
+      metricsMode: true
+      timeWindow: 60s
+      aggregations:
+        - count(status_code).where(Math.floor(status_code/100)==2).as('2XX')
+        - count(status_code).where(Math.floor(status_code/100)==3).as('3XX')
+        - count(status_code).where(Math.floor(status_code/100)==4).as('4XX')
+        - count(status_code).where(Math.floor(status_code/100)==5).as('5XX')
+        - count(method).where(method=='GET').as('GETs')
+        - count(method).where(method=='POST').as('POSTs')
+        - count(user_agent).as('UAS')
+      cumulative: false
+      flushOnInputClose: true
+      groupbys:
+        - id_orig_h
+        - id_resp_h
+        - id_resp_p
+      prefix: CL_http.
+      add:
+        - name: index
+          value: "'corelight_metrics'"
+    groupId: Z8Hpz8
+  - id: eval
+    filter: "true"
+    disabled: true
+    conf:
+      add:
+        - disabled: true
+          name: index
+          value: C.global.vars.metric_index
+    groupId: Z8Hpz8
+  - id: comment
+    filter: "true"
+    disabled: true
+    conf:
+      comment: >-
+        Less Informative Fields:
+
+        tags: If this array remains empty or doesn't offer valuable metadata for your use cases, consider its removal.
+    groupId: Z8Hpz8
+  - id: eval
+    filter: tags.length == 0
+    disabled: true
+    conf:
+      add: []
+      remove:
+        - tags
+    groupId: Z8Hpz8
+    description: cleaning empty values
+  - id: comment
+    filter: "true"
+    disabled: true
+    conf:
+      comment: >-
+        Potential Redundancies:
+
+
+        ts and _write_ts: Both seem to be timestamps and might provide similar information. One of them could be removed if they're generally providing the same data or if both aren't crucial for your analysis.
+
+
+        http_host and id.resp_h: Both fields provide information about the response host. If they are usually identical or if one isn't critical, consider removing one.
+    groupId: Z8Hpz8
+  - id: eval
+    filter: "true"
+    disabled: true
+    conf:
+      remove:
+        - _write_ts
+    groupId: Z8Hpz8
+  - id: eval
+    filter: (http_host == __e['id.resp_h'])
+    disabled: true
+    conf:
+      remove:
+        - http_host
+    groupId: Z8Hpz8
+  - id: comment
+    filter: "true"
+    disabled: true
+    conf:
+      comment: >-
+        General Fields:
+
+        index and sourcetype: If these are consistent across your logs or if they are not used often in your queries and analysis, they could be redundant.
+
+
+        cribl_pipe: If you're not using Cribl for data processing or if this field isn't valuable for your particular context, consider its removal.
+
+
+        @sensor: If this value remains consistent or is not crucial to differentiate between data sources, consider its removal.
+    groupId: Z8Hpz8
+  - id: eval
+    filter: "true"
+    disabled: true
+    conf:
+      remove:
+        - __e['@sensor']
+    groupId: Z8Hpz8
+  - id: comment
+    filter: "true"
+    disabled: true
+    conf:
+      comment: >-
+        Fields with Limited Applicability:
+
+
+        trans_depth: Unless you're tracking multi-part transactions or chunked transfers, and this field provides significant insight, consider its removal.
+    groupId: Z8Hpz8
+  - id: eval
+    filter: "true"
+    disabled: true
+    conf:
+      remove:
+        - trans_depth
+    groupId: Z8Hpz8
+  - id: comment
+    filter: "true"
+    disabled: true
+    conf:
+      comment: >-
+        Re-evaluate Based on Data Privacy Needs:
+
+
+        user_agent: While this field can be essential for some investigations, if you're not using it for analytics, or if there are privacy concerns, consider its removal or anonymization.
+    groupId: Z8Hpz8
+  - id: eval
+    filter: "true"
+    disabled: true
+    conf:
+      remove:
+        - user_agent
+    groupId: Z8Hpz8
+  - id: comment
+    filter: "true"
+    disabled: true
+    conf:
+      comment: >-
+        Depends on the Use Case:
+
+
+        resp_fuids and resp_mime_types: These fields could be removed if they don't align with your analytical needs or if they don't correlate with other data sources or queries you typically run. Especially resp_mime_types might be of interest when looking for potentially malicious file downloads, so evaluate its importance in your context.
+    groupId: Z8Hpz8
+  - id: eval
+    filter: "true"
+    disabled: true
+    conf:
+      remove:
+        - resp_fuids
+        - resp_mime_types
+    groupId: Z8Hpz8
+  - id: comment
+    filter: "true"
+    disabled: null
+    conf:
+      comment: 'Optional UID Correlation with Redis: This functionality provides the
+        choice to establish UID (Unique Identifier) correlation using Redis.
+        This correlation spans across all Corelight datasets / log types that
+        are being ingested (including other pipelines). The result of this
+        correlation becomes evident in the "Conn" logs, where UIDs that are also
+        present in other log types associated with the same event are displayed.
+        This feature contributes to an increased level of visibility within your
+        system of analysis, augmenting the depth of insight available for SOC
+        investigations. By linking UIDs across different log types, the tool
+        facilitates more comprehensive and effective scrutiny of security
+        events.'
+  - id: redis
+    filter: _path.includes('http') || __e['@path'].startsWith('http') ||
+      sourcetype.match(/http/)
+    disabled: true
+    conf:
+      commands:
+        - outField: __sadd_result
+          command: sadd
+          keyExpr: "`corelight_logs:${uid}`"
+          argsExpr: _path
+        - command: expire
+          keyExpr: "`corelight_logs:${uid}`"
+          argsExpr: "3600"
+      deploymentType: standalone
+      authType: none
+      maxBlockSecs: 60
+      tlsOptions:
+        rejectUnauthorized: false
+      url: "`redis://your_redis_ip_address>:6379`"
+    groupId: YfqmCs
+  - id: comment
+    filter: "true"
+    disabled: null
+    conf:
+      comment: >-
+        Compliance Options - CIM, ECS, MS Sentinel and Chronicle Unified Data
+        Model (UDM):
+
+        CIM (Common Information Model):
+
+        Splunk CIM Sourcetype to Data Model Mapping:
+
+        corelight_conn maps to Network_Sessions
+
+        corelight_conn maps to Network_Traffic
+
+        corelight_dhcp maps to Network_Sessions
+
+        corelight_dns maps to Network_Resolution
+
+        corelight_http maps to Web
+
+        corelight_smtp maps to Email
+
+        corelight_ssl maps to Certificates
+
+
+        ECS (Elastic Common Schema):
+
+        A unified chained pipeline CL_ECS-Chained covers: conn, dns, ssl, http, SSH, SSL, x509, Files, Stepping, RDP, DCE_RDP, SMB_Files, SMB_Mapping, Weird, Notice, Suricata Corelight datasets / log-types.
+
+
+        MS Sentinel:
+
+        Covers Sentinel Name, Asim and Suffixed name Formats
+
+        All datasets are linked via the Sentinel_cols_mappings.csv table.
+
+
+        Chronicle Unified Data Model (UDM)
+  - id: comment
+    filter: "true"
+    disabled: true
+    conf:
+      comment: "Uses a Chain function to call another pipeline depending on each
+        log-type and destination Data Model in Splunk. "
+    groupId: 2o22xv
+  - id: chain
+    filter: "true"
+    disabled: true
+    conf:
+      processor: CIM_Web-Chained
+    groupId: 2o22xv
+    description: CIM Compliance for the HTTP_Logs according to the Web Data Model
+      from Splunk
+  - id: comment
+    filter: "true"
+    disabled: true
+    conf:
+      comment: "Uses a Chain function to call another pipeline (corelight_ecs) which
+        will process the data. "
+    groupId: kEXHMA
+  - id: chain
+    filter: "true"
+    disabled: true
+    conf:
+      processor: CL_ECS-Chained
+    groupId: kEXHMA
+  - id: comment
+    filter: "true"
+    disabled: true
+    conf:
+      comment: "Attention: Select one of the three options"
+    groupId: JNyVzo
+  - id: comment
+    filter: "true"
+    disabled: true
+    conf:
+      comment: Sentinel name format
+    groupId: JNyVzo
+  - id: rename
+    filter: C.Lookup('Sentinel_cols_mapping.csv','dataset').match(_path)
+    disabled: true
+    conf:
+      wildcardDepth: 4
+      renameExpr: C.Lookup('Sentinel_cols_mapping.csv', 'json_name').match(name,
+        'sentinel_name')
+      baseFields: []
+      rename: []
+    groupId: JNyVzo
+  - id: comment
+    filter: "true"
+    disabled: true
+    conf:
+      comment: Asim format
+    groupId: JNyVzo
+  - id: rename
+    filter: C.Lookup('Sentinel_cols_mapping.csv','dataset').match(_path)
+    disabled: true
+    conf:
+      wildcardDepth: 4
+      renameExpr: C.Lookup('Sentinel_cols_mapping.csv', 'json_name').match(name,
+        'asim_name')
+      baseFields: []
+      rename: []
+    groupId: JNyVzo
+  - id: comment
+    filter: "true"
+    disabled: true
+    conf:
+      comment: Suffixed name format
+    groupId: JNyVzo
+  - id: rename
+    filter: C.Lookup('Sentinel_cols_mapping.csv','dataset').match(_path)
+    disabled: true
+    conf:
+      wildcardDepth: 4
+      renameExpr: C.Lookup('Sentinel_cols_mapping.csv', 'json_name').match(name,
+        'suffixed_name')
+      baseFields: []
+      rename: []
+    groupId: JNyVzo
+  - id: chain
+    filter: "true"
+    disabled: true
+    conf:
+      processor: CL_Chronicle_Chained
+    groupId: LvArrv
+  - id: comment
+    filter: "true"
+    disabled: null
+    conf:
+      comment: >-
+        Cleanup Functions and Serialization:
+
+        In the cleanup phase, the serialization process determines the fields that are retained within the `_raw` field. This decision influences the event size, contingent on the number of fields retained or removed, as well as the chosen serialization method. The serialization options include JSON, Key-Value Pair, and CSV formats. The selection of serialization type impacts the data structure and, subsequently, the overall size of the event. 
+
+        Careful consideration is advised to strike a balance between event comprehensiveness and efficient data storage.
+  - id: serialize
+    filter: _path.includes('http') || __e['@path'].startsWith('http') ||
+      sourcetype.match(/http/)
+    disabled: true
+    conf:
+      type: kvp
+      fields:
+        - "!_*"
+        - "!cribl*"
+        - "*"
+        - src_ip
+      dstField: _raw
+      cleanFields: true
+    groupId: ZGkPkS
+  - id: eval
+    filter: _path == 'http' || __e['@path'] == 'http'
+    disabled: true
+    conf:
+      remove:
+        - "*"
+      keep:
+        - _raw
+        - index
+        - sourcetype
+    description: Cleanup
+    groupId: ZGkPkS

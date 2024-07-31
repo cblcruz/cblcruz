@@ -1,0 +1,140 @@
+output: default
+streamtags: []
+groups: {}
+asyncFuncTimeout: 1000
+functions:
+  - id: regex_extract
+    filter: "true"
+    disabled: null
+    conf:
+      source: "'certificate.issuer'"
+      iterations: 100
+      overwrite: false
+      regex: /CN=(?<ssl_issuer_common_name>[^,"]+)/
+      regexList:
+        - regex: /emailAddress=\w+\@(?<ssl_issuer_email_domain>\w+\.\w+)/
+  - id: regex_extract
+    filter: "true"
+    disabled: null
+    conf:
+      source: "'certificate.subject'"
+      iterations: 100
+      overwrite: false
+      regex: /CN=(?<ssl_subject_common_name>[^,"]+)/g
+      regexList:
+        - regex: /emailAddress=\w+\@(?<ssl_subject_email_domain>\w+\.\w+)/g
+  - id: eval
+    filter: "true"
+    disabled: null
+    conf:
+      add:
+        - name: dest
+          value: __e['id.resp_h']
+        - name: src
+          value: __e['id.orig_h']
+        - disabled: false
+          name: action
+          value: "established == true ? 'success' : 'failure'"
+        - disabled: false
+          name: days_to_expiry
+          value: Math.round(new Date(C.Time.strptime(__e['certificate.not_valid_after'],
+            '%Y-%m-%dT%H:%M:%S.%L') - Date.now())/86400000)
+      remove:
+        - "*==null"
+  - id: rename
+    filter: "true"
+    disabled: false
+    conf:
+      wildcardDepth: 5
+      rename:
+        - currentName: "'id.orig_h'"
+          newName: src
+        - currentName: id_orig_h
+          newName: src
+        - currentName: "'id.orig_p'"
+          newName: src_port
+        - currentName: id_orig_p
+          newName: src_port
+        - currentName: id_resp_h
+          newName: dest
+        - currentName: "id_resp_h "
+          newName: dest
+        - currentName: "'id.resp_p'"
+          newName: dest_port
+        - currentName: id_resp_p
+          newName: dest_port
+        - currentName: service
+          newName: app
+        - currentName: resp_l2_addr
+          newName: dest_mac
+        - currentName: orig_l2_addr
+          newName: src_mac
+        - newName: ssl_issuer
+          currentName: issuer
+        - currentName: server_name
+          newName: ssl_subject_common_name
+        - newName: ssl_subject
+          currentName: subject
+        - currentName: version
+          newName: ssl_version
+        - currentName: cipher
+          newName: ssl_cipher
+        - currentName: curve
+          newName: ssl_curve
+        - newName: system_name
+          currentName: _system_name
+        - currentName: validation_status
+          newName: signature
+        - currentName: "'certificate.issuer'"
+          newName: ssl_issuer
+        - currentName: "'certificate.not_valid_after'"
+          newName: not_valid_after
+        - currentName: "'certificate.not_valid_before'"
+          newName: ssl_start_time
+        - currentName: "'certificate.not_valid_after'"
+          newName: ssl_end_time
+        - currentName: "'certificate.serial'"
+          newName: ssl_serial
+        - currentName: "'certificate.subject'"
+          newName: ssl_subject
+        - currentName: "'certificate.version'"
+          newName: ssl_version
+        - currentName: "'certificate.key_alg'"
+          newName: ssl_publickey_algorithm
+        - currentName: "'certificate.sig_alg'"
+          newName: ssl_signature_algorithm
+        - currentName: fingerprint
+          newName: ssl_hash
+  - id: regex_extract
+    filter: "true"
+    disabled: null
+    conf:
+      source: ssl_issuer
+      iterations: 100
+      overwrite: false
+      regex: /O=(?<ssl_issuer_organization>[^,]+)/g
+      regexList:
+        - regex: /OU=(?<ssl_issuer_unit>[^,]+)/
+        - regex: /DC=(?<ssl_issuer_domain>[^,]+)/
+        - regex: /(?<ssl_subject_email>[a-zA-Z0-9\.!#$%&'*+=?^`{|}~;_-]+@(?<ssl_subject_email_domain>[^,]+))/
+        - regex: /L=(?<ssl_issuer_locality>[^,]+)/
+        - regex: /ST=(?<ssl_issuer_state>[^,]+)/
+        - regex: /,C=(?<ssl_issuer_country>[^,]+)/
+        - regex: /title=(?<ssl_name>[^,]+)/
+  - id: regex_extract
+    filter: "true"
+    disabled: null
+    conf:
+      source: ssl_subject
+      iterations: 100
+      overwrite: false
+      regex: /,\"subject\":\"(?<ssl_subject>[^\"]+)\",/
+      regexList:
+        - regex: /O=(?<ssl_subject_organization>[^,]+)/
+        - regex: /OU=(?<ssl_subject_unit>[^,]+)/
+        - regex: /DC=(?<ssl_subject_domain>[^,]+)/
+        - regex: /emailAddress=(?<ssl_subject_email>[a-zA-Z0-9\.!#$%&'*+=?^`{|}~;_-]+@(?<ssl_subject_email_domain>[^,]+))/
+        - regex: /L=(?<ssl_subject_locality>[^,]+) /
+        - regex: /ST=(?<ssl_subject_state>[^,]+)/
+        - regex: /,C=(?<ssl_subject_country>[^,]+)/
+        - regex: /title=(?<ssl_name>[^,]+) /

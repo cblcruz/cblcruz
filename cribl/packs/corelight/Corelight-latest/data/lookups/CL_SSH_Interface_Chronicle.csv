@@ -1,0 +1,17 @@
+interface,sec_r_summary,sec_r_desc
+LFU,Large Client File Upload,A file transfer occurred in which the client sent a sequence of bytes to the server. Large file are identified dynamically based on trains of MTU-sized packets
+MFA,Multifactor Authentication,"The server required a second form of authentication (a code) after password or public key was accepted, and the client successfully provided it"
+NA,None Authentication,The client successfully authenticated using the None method
+NRC,No Remote Command,The -N flag was used in SSH authentication
+PKA,Public Key Authentication,The client automatically authenticated using pubkey authentication
+RSI,Reverse SSH Initiated,The Reverse session is initiated from the server back to the client
+RSIA,Reverse SSH Initiated Automated,"The inititation of the Reverse session happened very early in the packet stream, indicating automation"
+RSK,Reverse SSH Keystrokes,Keystrokes are detected within the Reverse tunnel
+RSP,Reverse SSH Providioned,"The client connected with -R flag, which provisions the port to be used for a Reverse Session set up at any future time"
+SA,Authentication Scanning,The client scanned authentication method with the server and then disconnected
+SC,Capabilities Scanning,The client exchanged capabilities with the server and then disconnected
+SFD,Small Client File Download,A file transfer occurred in which the server sent a sequence of bytes to the client
+SFU,Small Client File Upload,A file transfer occurred in which the client sent a sequence of bytes to the server
+SP,Other Scanning,A client and server didn't exchange encrypted packets but the client wasn't a version or capabilities scanner
+SV,Version Scanning,A client exchanged version strings with the server and than disconnected
+UA,Unknown Authentication,The authentication method is not determinated or is unknown

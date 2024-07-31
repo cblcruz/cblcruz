@@ -1,0 +1,36 @@
+output: default
+streamtags: []
+groups: {}
+asyncFuncTimeout: 1000
+functions:
+  - id: comment
+    filter: "true"
+    disabled: null
+    conf:
+      comment: Splunk Data Model Authentication. For the Corelight data used as
+        optional normalization of SSH logs
+  - id: eval
+    filter: "true"
+    disabled: null
+    conf:
+      add:
+        - disabled: false
+          name: action
+          value: "auth_success == true ? 'success' : 'failure'"
+        - disabled: false
+          name: app
+          value: "'ssh'"
+  - id: rename
+    filter: "true"
+    disabled: false
+    conf:
+      wildcardDepth: 5
+      rename:
+        - currentName: "'id.orig_h'"
+          newName: src
+        - currentName: "'id.resp_h'"
+          newName: dest
+        - currentName: server_name
+          newName: dest_dns
+        - currentName: user_agent
+          newName: client

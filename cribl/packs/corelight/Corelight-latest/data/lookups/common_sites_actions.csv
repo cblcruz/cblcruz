@@ -1,0 +1,29 @@
+host," action"
+www.google.com," sample"
+www.youtube.com," suppress"
+www.facebook.com," suppress"
+www.twitter.com," sample"
+www.instagram.com," sample"
+www.baidu.com," flag"
+www.yahoo.com," sample"
+www.linkedin.com," sample"
+www.amazon.com," suppress"
+www.zoom.us," sample"
+www.webex.com," sample"
+www.cnn.com," suppress"
+www.microsoft.com," sample"
+www.office.com," sample"
+www.reddit.com," sample"
+www.netflix.com," sample"
+www.walmart.com," suppress"
+www.xvideos.com," flag"
+www.pornhub.com," flag"
+www.kmu-update.ch,flag
+kmu-update.swisscom.ch,suppress
+t15.ru.tf,suppress
+sc.swisscom.ch,sample
+ptp.de.vc,sample
+static.ak.fbcdn.net,sample
+pixeltech.ru,flag
+vipmasternode.com,suppress
+lifeisnetwork.com,suppress

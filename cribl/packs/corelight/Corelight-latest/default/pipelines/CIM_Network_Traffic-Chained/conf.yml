@@ -1,0 +1,80 @@
+output: default
+streamtags: []
+groups: {}
+asyncFuncTimeout: 1000
+functions:
+  - id: eval
+    filter: "true"
+    disabled: null
+    conf:
+      add:
+        - disabled: false
+          name: bytes
+          value: __e['bytes_in'] + __e['bytes_out']
+        - disabled: false
+          value: __e['resp_ip_bytes'] + __e['orig_ip_bytes']
+          name: bytes
+        - disabled: false
+          name: packets
+          value: __e['resp_pkts'] + __e['orig_pkts']
+        - disabled: true
+          name: app
+          value: split(service, ",")
+        - disabled: false
+          name: transport
+          value: "(proto == 'icmp' && __e['id.org_h'].match(/'.*:.*'/)) ? 'icmp6' : proto"
+        - disabled: false
+          name: user_id
+          value: uid
+      remove:
+        - local_orig
+        - local_resp
+        - missed_bytes
+        - appname
+  - id: rename
+    filter: "true"
+    disabled: false
+    conf:
+      wildcardDepth: 5
+      rename:
+        - currentName: "'id.orig_h'"
+          newName: src_ip
+        - newName: dest_ip
+          currentName: "'id.resp_h'"
+        - currentName: "'id.resp_h_name.vals'"
+          newName: dest
+        - currentName: resp_bytes
+          newName: bytes_in
+        - currentName: resp_ip_bytes
+          newName: bytes_in
+        - currentName: orig_ip_bytes
+          newName: bytes_out
+        - newName: bytes_out
+          currentName: orig_bytes
+        - currentName: orig_pkts
+          newName: packets_out
+        - currentName: orig_l2_addr
+          newName: src_mac
+        - currentName: resp_pkts
+          newName: packets_in
+        - currentName: resp_l2_addr
+          newName: dest_mac
+        - currentName: resp_l2_addr
+          newName: dst_mac
+        - currentName: "'id.orig_h'"
+          newName: src
+        - currentName: "'id.orig_p'"
+          newName: src_port
+        - currentName: "'id.resp_p'"
+          newName: dest_port
+        - currentName: id_resp
+          newName: dest_port
+        - newName: session_id
+          currentName: uid
+        - currentName: orig_cc
+          newName: src_country
+        - currentName: resp_cc
+          newName: dest_country
+        - currentName: service
+          newName: app
+description: CIM compliance pipeline according to the Network Traffic Data Model

@@ -1,0 +1,75 @@
+output: default
+streamtags: []
+groups: {}
+asyncFuncTimeout: 1000
+functions:
+  - id: eval
+    filter: _path.includes('dns') || __e['@path'].startsWith('dns') ||
+      sourcetype.match(/dns/) || _raw.match(/{\"_path\":\"dns\"/)
+    disabled: false
+    conf:
+      add:
+        - name: query_length
+          value: __e['query'].length
+        - name: answer_length
+          value: __e['answers'].length
+          disabled: false
+        - name: answer_count
+          value: __e['answers'].count
+          disabled: true
+        - disabled: false
+          value: "(proto == 'icmp' && __e['id.org_h'].match(/'.*:.*'/)) ? 'icmp6' : proto"
+          name: transport
+        - disabled: false
+          name: message_type
+          value: "rcode ? 'Response' : 'Query'"
+        - disabled: false
+          value: C.Lookup('corelight_dns_reply_code.csv','rcode').match(__e['rcode'],'cim_reply_code')
+          name: reply_code
+  - id: rename
+    filter: _path.includes('dns') || __e['@path'].startsWith('dns') ||
+      sourcetype.match(/dns/) || _raw.match(/{\"_path\":\"dns\"/)
+    disabled: false
+    conf:
+      wildcardDepth: 5
+      rename:
+        - currentName: "'id.orig_h'"
+          newName: src
+        - currentName: id_orig_h
+          newName: src
+        - currentName: "'id.resp_h'"
+          newName: dest
+        - currentName: id_resp_h
+          newName: dest
+        - currentName: "'id.orig_p'"
+          newName: src_port
+        - currentName: id_orig_p
+          newName: src_port
+        - currentName: "'id.resp_p'"
+          newName: dest_port
+        - currentName: id_resp_p
+          newName: dest_port
+        - currentName: answers
+          newName: answer
+        - newName: record_class
+          currentName: qclass_name
+        - currentName: rcode
+          newName: reply_code_id
+        - newName: record_type
+          currentName: qtype_name
+        - newName: dns_flags_authoritative_answer
+          currentName: AA
+        - currentName: RA
+          newName: dns_flags_recursion_available
+        - newName: dns_flags_rejected
+          currentName: rejected
+        - newName: dns_flags_truncated_response
+          currentName: TC
+        - newName: transaction_id
+          currentName: trans_id
+        - newName: duration
+          currentName: rtt
+        - currentName: TTLs
+          newName: ttl
+        - currentName: uid
+          newName: session_id

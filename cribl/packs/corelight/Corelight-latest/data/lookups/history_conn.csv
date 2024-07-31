@@ -1,0 +1,24 @@
+phase,side,description
+S,Orig,A SYN without the ACK bit set
+H,Orig,A SYN-ACK ("handshake")
+A,Orig,A Pure ACK
+D,Orig,Packet with payload ("data")
+F,Orig,Packet with FIN bit set
+R,Orig,Packet with RST bit set
+C,Orig,Packet with a bad checksum
+I,Orig,Inconsistent packet (both SYN & RST)
+Q,Orig,Multi-Flag packet (SYN & FIN or SYN + RST)
+T,Orig,Retransmitted packet
+W,Orig,Packet with zero window advertisement
+s,Resp,A SYN without the ACK bit set
+h,Resp,A SYN-ACK ("handshake")
+a,Resp,A Pure ACK
+d,Resp,Packet with payload ("data")
+f,Resp,Packet with FIN bit set
+r,Resp,Packet with RST bit set
+c,Resp,Packet with a bad checksum
+i,Resp,Inconsistent packet (both SYN & RST)
+q,Resp,Multi-Flag packet (SYN & FIN or SYN + RST)
+t,Resp,Retransmitted packet
+w,Resp,Packet with zero window advertisement
+^,-,Flipped connection

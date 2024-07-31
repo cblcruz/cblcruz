@@ -1,0 +1,291 @@
+id: default
+groups:
+  cTkxpD:
+    name: Corelight Pack main routes by dataset
+    index: 1
+    description: Each Corelight dataset is routed to be processed through its
+      specific pipeline.
+  IpLdOO:
+    name: Corelight Alerts
+    description: Data sets from Suricata, Notice  and Investigator Alerts logs
+      combined with Corelight Logic
+    index: 2
+comments:
+  - id: sxPMia
+    comment: >-
+      IMPORTANT: Tailored Routing for Corelight Datasets
+
+
+      A critical aspect of the configuration involves routing each Corelight dataset/log-type to its dedicated pipeline. As new log-types are incorporated and exported by Corelight, it's vital to establish a corresponding route and pipeline for their processing.
+
+
+      Routing Criteria:
+
+
+      Filtering expressions are employed to determine which log-types pass through specific routes. These expressions account for variations in log formats (TSV, Syslog, JSON, Elasticsearch), significantly reducing the number of routes required within the Pack.
+
+      Keep in mind that as Corelight sensors introduce new log formats, the routes for all log-types must be adjusted accordingly.
+
+      Flexibility in Routing:
+
+
+      To accommodate different scenarios, the option to create routes externally to the Pack is also available. This extends the flexibility of the routing setup.
+
+      The result of these tailored routes and pipelines is a highly adaptable and efficient processing infrastructure, capable of handling diverse Corelight datasets with optimal precision.
+
+
+      The Catch All route will process any dataset/log-type without a matching pipeline, it will parse and process the data but with limited functionality. 
+    index: 0
+routes:
+  - id: AdbB5k
+    name: Conn_logs - Connection Details
+    final: true
+    disabled: false
+    pipeline: CL_Conn
+    description: Routes Corelight  Conn log events to the CL_Conn pipeline - All formats
+    clones:
+      - {}
+    enableOutputExpression: false
+    outputExpression: null
+    filter: _path.includes('conn') || __e['@path'].startsWith('conn') ||
+      sourcetype.match(/conn/) || _raw.match(/{\"_path\":\"conn\"/)
+    output: default
+    groupId: cTkxpD
+  - id: 7rHvKG
+    name: DNS_logs - DNS query/response details
+    final: true
+    disabled: false
+    pipeline: CL_DNS
+    description: Routes Corelight  DNS log events to the CL_DNS pipeline - All formats
+    clones:
+      - {}
+    enableOutputExpression: false
+    outputExpression: null
+    filter: _path.includes('dns') || __e['@path'].startsWith('dns') ||
+      sourcetype.match(/dns/) || _raw.match(/{\"_path\":\"dns\"/)
+    output: default
+    groupId: cTkxpD
+  - id: eipCOp
+    name: SSL_logs - SSL handshakes
+    final: true
+    disabled: false
+    pipeline: CL_SSL
+    description: Routes Corelight  SSL log events to the CL_SSL pipeline - All formats
+    clones:
+      - {}
+    enableOutputExpression: false
+    outputExpression: null
+    filter: _path.includes('ssl') || __e['@path'].startsWith('ssl') ||
+      sourcetype.match(/ssl/) || _raw.match(/{\"_path\":\"ssl\"/)
+    output: default
+    groupId: cTkxpD
+  - id: EN2pBs
+    name: HTTP_logs - HTTP request/reply details / Syslog format/source
+    final: true
+    disabled: false
+    pipeline: CL_HTTP
+    description: Routes Corelight  HTTP log events to the CL_HTTP pipeline - All formats
+    clones:
+      - {}
+    enableOutputExpression: false
+    outputExpression: null
+    filter: _path.includes('http') || __e['@path'].startsWith('http') ||
+      sourcetype.match(/http/) || _raw.match(/{\"_path\":\"http\"/)
+    output: default
+    groupId: cTkxpD
+  - id: gbvEM9
+    name: SSH_logs - SSL Logs from Corelight
+    final: true
+    disabled: false
+    pipeline: CL_SSH
+    description: Routes Corelight  Files log events to the CL_SSH pipeline - All formats
+    clones:
+      - {}
+    enableOutputExpression: false
+    outputExpression: null
+    filter: _path.includes('ssh') || __e['@path'].startsWith('ssh') ||
+      sourcetype.match(/ssh/) || _raw.match(/{\"_path\":\"ssh\"/)
+    output: default
+    groupId: cTkxpD
+  - id: ValUSX
+    name: RDP_logs -Analysis results from Corelight
+    final: true
+    disabled: false
+    pipeline: CL_RDP
+    description: Routes Corelight  RDP log events to the CL_RDP pipeline - All formats
+    clones:
+      - {}
+    enableOutputExpression: false
+    outputExpression: null
+    filter: _path.includes('rdp') || __e['@path'].startsWith('rdp') ||
+      sourcetype.match(/rdp/) || _raw.match(/{\"_path\":\"rdp\"/)
+    output: default
+    groupId: cTkxpD
+  - id: exEDSN
+    name: Files_logs -File Analysis results from Corelight
+    final: true
+    disabled: false
+    pipeline: CL_Files
+    description: Routes Corelight  Files log events to the CL_Files pipeline - All formats
+    clones:
+      - {}
+    enableOutputExpression: false
+    outputExpression: null
+    filter: _path.includes('files') || __e['@path'].startsWith('files') ||
+      sourcetype.match(/files/) || _raw.match(/{\"_path\":\"files\"/)
+    output: default
+    groupId: cTkxpD
+  - id: pmmEv3
+    name: SMB_files - SMB Files logs
+    final: true
+    disabled: false
+    pipeline: CL_SMB_files
+    description: Routes Corelight  SMB files log events to the CL_SMB_files pipeline
+      - All formats
+    clones:
+      - {}
+    enableOutputExpression: false
+    outputExpression: null
+    filter: _path.includes('smb_files') || __e['@path'].startsWith('smb_files') ||
+      sourcetype.match(/smb_files/) || _raw.match(/{\"_path\":\"smb_files\"/)
+    output: default
+    groupId: cTkxpD
+  - id: btwFTt
+    name: SMB_mapping - SMB Files logs
+    final: true
+    disabled: false
+    pipeline: CL_SMB_mapping
+    description: Routes Corelight  SMB mapping log events to the CL_SMB_mapping
+      pipeline - All formats
+    clones:
+      - {}
+    enableOutputExpression: false
+    outputExpression: null
+    filter: _path.includes('smb_mapping') || __e['@path'].startsWith('smb_mapping')
+      || sourcetype.match(/smb_mapping/) ||
+      _raw.match(/{\"_path\":\"smb_mapping\"/)
+    output: default
+    groupId: cTkxpD
+  - id: Jsl5nb
+    name: Weird_logs
+    final: true
+    disabled: false
+    pipeline: CL_Weird
+    description: Routes Corelight  Weird log events to the CL_Weird pipeline - All formats
+    clones:
+      - {}
+    enableOutputExpression: false
+    outputExpression: null
+    filter: _path.includes('weird') || __e['@path'].startsWith('weird') ||
+      sourcetype.match(/weird/) || _raw.match(/{\"_path\":\"weird\"/)
+    output: default
+    groupId: cTkxpD
+  - id: 2qmsiH
+    name: NTP_logs
+    final: true
+    disabled: false
+    pipeline: CL_NTP
+    description: Routes Corelight  NTP log events to the CL_NTP pipeline - All formats
+    clones:
+      - {}
+    enableOutputExpression: false
+    outputExpression: null
+    filter: _path.includes('ntp') || __e['@path'].startsWith('ntp') ||
+      sourcetype.match(/ntp/) || _raw.match(/{\"_path\":\"ntp\"/)
+    output: default
+    groupId: cTkxpD
+  - id: t1wxS2
+    name: X509_logs
+    final: true
+    disabled: false
+    pipeline: CL_x509
+    description: Routes Corelight  x509 log events to the CL_x509 pipeline - All formats
+    clones:
+      - {}
+    enableOutputExpression: false
+    outputExpression: null
+    filter: _path.includes('x509') || __e['@path'].startsWith('x509') ||
+      sourcetype.match(/x509/) || _raw.match(/{\"_path\":\"x509\"/)
+    output: default
+    groupId: cTkxpD
+  - id: OEn7tZ
+    name: DCE_RPC Logs
+    final: true
+    disabled: false
+    pipeline: CL_DC_RPC
+    description: Routes Corelight  DC_RPC log events to the CL_DC_RPC pipeline - All formats
+    clones:
+      - {}
+    enableOutputExpression: false
+    outputExpression: null
+    filter: _path.includes('dce_rpc') || __e['@path'].startsWith('dce_rpc') ||
+      sourcetype.match(/dce_rpc/) || _raw.match(/{\"_path\":\"dce_rpc\"/)
+    output: default
+    groupId: cTkxpD
+  - id: 18thCu
+    name: Suricata from Corelight Logs
+    final: true
+    disabled: false
+    pipeline: CL_Suricata_corelight
+    description: Results from Suricata_Corelight analysis
+    clones: []
+    enableOutputExpression: false
+    outputExpression: null
+    filter: _path.includes('suricata_corelight') ||
+      __e['@path'].startsWith('suricata_corelight') ||
+      sourcetype.match(/suricata_corelight/) ||
+      _raw.match(/{\"_path\":\"suricata_corelight\"/)
+    output: default
+    groupId: IpLdOO
+  - id: rXyQ4H
+    name: Intel_logs - Intel Analysis results from Corelight
+    final: true
+    disabled: false
+    pipeline: CL_Intel
+    description: Routes Corelight  Intel Logs events to the CL_Intel pipeline - All formats
+    clones:
+      - {}
+    enableOutputExpression: false
+    outputExpression: null
+    filter: _path.includes('intel') || __e['@path'].startsWith('intel') ||
+      sourcetype.match(/intel/) || _raw.match(/{\"_path\":\"intel\"/)
+    output: default
+    groupId: IpLdOO
+  - id: gxT27D
+    name: Notice_Logs
+    final: true
+    disabled: false
+    pipeline: CL_Notice
+    description: Routes Corelight  Notice Logs events to the CL_Notice pipeline -
+      All formats
+    clones: []
+    enableOutputExpression: false
+    outputExpression: null
+    filter: _path.includes('notice') || __e['@path'].startsWith('notice') ||
+      sourcetype.match(/notice/) || _raw.match(/{\"_path\":\"notice\"/)
+    output: default
+    groupId: IpLdOO
+  - id: YGTeY6
+    name: "Corelight Catch All "
+    final: true
+    disabled: true
+    pipeline: CL_Catch_All
+    description: All log-types not processed by a Pipeline in the pack will be
+      processed by a generic one until specific use cases are developed for
+      these log -types
+    clones: []
+    enableOutputExpression: false
+    outputExpression: null
+    filter: "!cribl_pipe && !soure.startsWith('cribl')"
+    output: default
+  - id: default
+    name: default
+    final: true
+    disabled: false
+    pipeline: devnull
+    description: ""
+    clones: []
+    enableOutputExpression: false
+    outputExpression: null
+    filter: "!cribl_pipe"
+    output: default

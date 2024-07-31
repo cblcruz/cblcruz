@@ -1,0 +1,13 @@
+code,state
+S0,"S0: Connection attempt seen, no reply"
+S1,"S1: Connection established, not terminated"
+S2,S2: Connection established and close attempt by originator seen (but no reply from responder)
+S3,"S3: Established, Resp attempts close, no reply from Orig"
+SF,SF: Normal SYN/FIN completion
+REJ,REJ: Connection attemp rejected
+RSTO,"RSTO: Connection established, originator aborted (sent a RST)"
+RSTOS0,"RSTOS0: Originator sent a SYN followed by a RST, we never saw a SYN-ACK from the responder"
+"RSTOSH.""RSTOSH: Responder sent a SYN ACK followed by a RST"," we never saw a SYN from the (purported) originator"""
+RSTR,"RSTR: Established, responder aborted"
+SH,"SH: Originator sent a SYN followed by a FIN, we never saw a SYN ACK from the responder (hence the connection was ""half"" open)"
+OTH,"OTH: No SYN seen, just midstream traffic (a partial connection that was not later closed)"

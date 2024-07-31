@@ -1,0 +1,36 @@
+output: default
+streamtags: []
+groups: {}
+asyncFuncTimeout: 1000
+functions:
+  - id: rename
+    filter: "true"
+    disabled: false
+    conf:
+      wildcardDepth: 5
+      rename:
+        - currentName: "'id.orig_h'"
+          newName: src_ip
+        - currentName: "'id.resp_h'"
+          newName: dest
+        - currentName: id_resp_h
+          newName: dest
+        - currentName: "'id.resp_p'"
+          newName: dest_port
+        - currentName: id_resp_p
+          newName: dest_port
+        - currentName: id_orig_h
+          newName: src
+        - currentName: "'id.orig_p'"
+          newName: src_port
+        - currentName: id_orig_p
+          newName: src_port
+        - newName: request_payload_type
+          currentName: fc_request
+        - newName: response_code
+          currentName: iin
+        - currentName: fc_reply
+          newName: response_payload_type
+        - newName: session_id
+          currentName: uid
+description: CIM compliance pipeline according to the Network Traffic Data Model

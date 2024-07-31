@@ -1,0 +1,714 @@
+output: default
+streamtags: []
+groups:
+  vfMW5s:
+    name: Parse & Trim
+    description: Parse data and remove fields that are not desired for sending to
+      destination
+    disabled: false
+    index: 1
+  PmMnc1:
+    name: "Enrichment "
+    description: "Basic enrichment functions "
+    disabled: false
+    index: 2
+  X42G34:
+    name: Reduction
+    description: Baseline for Event Size reduction (reducing or removing fields)
+    index: 3
+    disabled: false
+  YfqmCs:
+    name: UID Correlation across all log types
+    index: 5
+    disabled: true
+  2o22xv:
+    name: Splunk  Common Information Module (CIM)
+    index: 7
+    disabled: true
+    description: Splunk CIM based on the Network Resolution Data Model
+  kEXHMA:
+    name: Elastic Common Schema (ECS)
+    description: Elasticsearch ECS normalization
+    disabled: true
+    index: 8
+  N1s5MI:
+    name: MS Sentinel mappings
+    description: Mapping to MS Sentinel Fields - Sentinel name, Asim & Suffixed name formats
+    index: 9
+    disabled: true
+  AsPgTh:
+    name: "Chronicle Security Data "
+    disabled: true
+    index: 10
+  ZGkPkS:
+    name: Cleanup
+    disabled: true
+    index: 12
+asyncFuncTimeout: 1000
+functions:
+  - id: comment
+    filter: "true"
+    disabled: null
+    conf:
+      comment: >-
+        DNS Log Processing: This section establishes fundamental Cribl Stream
+        functions tailored for DNS logs, aiming to streamline processing
+        efficiency. The process encompasses data parsing from diverse Corelight
+        log types, the exclusion of unsuitable logs, standardization of
+        timestamps, specification of index and source types, enhancement of DNS
+        query fields, identification of DNS tunneling attempts, and elimination
+        of lesser-used PCAP fields. Additionally, the process removes east/west
+        traffic originating from valid ICAAN private space.
+
+
+        The retention of pertinent data significantly enhances SOC analysis by enabling swifter and more efficient investigative procedures.
+  - id: comment
+    filter: "true"
+    disabled: false
+    conf:
+      comment: >-
+        Data Format Identification: This function clarifies the data formats
+        that are being ingested into the pipeline. The pipeline supports a
+        variety of formats, including TSV (Tab-Separated Values), JSON
+        (JavaScript Object Notation), Elasticsearch, as well as various agents
+        like Splunk UF, Filebeats, and Cribl Edge. Additionally, sources like
+        HEC (HTTP Event Collector) and Syslog are also supported.
+
+
+        It's important to note that the variable Var.log_format() is defined within the Knowledge Base under Global Variables, specifically within the log_format category within this Pack.
+    groupId: vfMW5s
+  - id: eval
+    filter: "true"
+    disabled: false
+    conf:
+      add:
+        - disabled: false
+          name: log_format
+          value: C.vars.log_format()
+      keep:
+        - "*"
+    groupId: vfMW5s
+    description: "Creates an internal field identifier for the log format coming
+      through (tsv, csv, json, elastic, etc.) "
+  - id: comment
+    filter: "true"
+    disabled: false
+    conf:
+      comment: "Handling Raw Syslog Data: In cases where the ingested data comprises
+        raw syslog messages without prior preprocessing, the objective is to
+        parse these messages into distinct fields that can subsequently be
+        utilized by the subsequent functions in the pipeline. This parsing
+        process transforms the unprocessed syslog messages into structured data
+        for effective downstream processing."
+    groupId: vfMW5s
+  - id: serde
+    filter: log_format == 'syslog'
+    disabled: false
+    conf:
+      mode: extract
+      type: csv
+      srcField: message
+      cleanFields: true
+      allowedKeyChars: []
+      allowedValueChars: []
+      keep: []
+      remove:
+        - message
+        - raw_mgmt
+    groupId: vfMW5s
+  - id: comment
+    filter: "true"
+    disabled: false
+    conf:
+      comment: >-
+        Processing TSV Formatted Data: In scenarios where the ingested data
+        follows the TSV (Tab-Separated Values) format, the procedure involves
+        extracting all available fields using the CL_Conn parser from the
+        Knowledge section within this Pack. It's important to note that the
+        effectiveness of this parser is influenced by the manner in which TSV
+        headers are transmitted from the Corelight sensor.
+
+
+        It's advised to meticulously validate both the types and order of fields being received. This validation process enables you to make necessary adjustments to the existing parser (CL_DNS), such as adding, removing, or reordering fields. This ensures that the parser accurately interprets the TSV data and facilitates seamless downstream processing.
+    groupId: vfMW5s
+  - id: serde
+    filter: log_format == 'TSV'
+    disabled: false
+    conf:
+      mode: extract
+      type: delim
+      delimChar: \t
+      quoteChar: '"'
+      escapeChar: \
+      nullValue: "-"
+      srcField: _raw
+      fields:
+        - ts
+        - uid
+        - id.orig_h
+        - id.orig_p
+        - id.resp_h
+        - id.resp_p
+        - proto
+        - trans_id
+        - rtt
+        - query
+        - qclass
+        - qclass_name
+        - qtypeqtype_name
+        - rcode
+        - rcode_name
+        - AA
+        - TC
+        - RD
+        - RA
+        - Z
+        - answers
+        - TTLs
+        - rejected
+    groupId: vfMW5s
+  - id: comment
+    filter: "true"
+    disabled: false
+    conf:
+      comment: "Processing Data from HEC Token Format and Agents: In situations where
+        the data is ingested through HEC token formats (e.g., Splunk HEC or HTTP
+        HEC) or is sourced from agents (such as log shippers like Splunk UF,
+        Filebeats or Cribl Edge), the process involves extracting all available
+        fields from the incoming data. This step ensures that the relevant
+        information contained within the data is effectively captured for
+        subsequent processing by the pipeline."
+    groupId: vfMW5s
+  - id: serde
+    filter: log_format == 'HEC' || log_format == 'Agent'
+    disabled: false
+    conf:
+      mode: extract
+      type: json
+      srcField: _raw
+    groupId: vfMW5s
+  - id: comment
+    filter: "true"
+    disabled: false
+    conf:
+      comment: "Drop events NOT matching DNS log type in order to be processed by this
+        pipeline exclusively "
+    groupId: vfMW5s
+  - id: drop
+    filter: "!_path.startsWith('dns') && !__e['@path'].startsWith('dns') &&
+      !sourcetype.includes('dns')"
+    disabled: false
+    conf: {}
+    groupId: vfMW5s
+  - id: drop
+    filter: _path.includes('_red') || __e['@path'].includes('_red') ||
+      sourcetype.match(/_red/)
+    disabled: false
+    conf: {}
+    description: Optional removal of conn_red logs, will process only conn
+    groupId: vfMW5s
+  - id: auto_timestamp
+    filter: "true"
+    disabled: false
+    conf:
+      srcField: ts
+      dstField: _time
+      defaultTimezone: UTC
+      timeExpression: time.getTime() / 1000
+      offset: 0
+      maxLen: 150
+      defaultTime: now
+      latestDateAllowed: +1week
+      earliestDateAllowed: -420weeks
+    groupId: vfMW5s
+  - id: comment
+    filter: "true"
+    disabled: false
+    conf:
+      comment: "Validation and Addition of Index and Source Type Fields: This process
+        entails checking for the presence of both the Index and Source Type
+        fields within the data. In instances where these fields are absent, the
+        function takes corrective action by incorporating them based on
+        information from the data source itself and/or the predefined Global
+        Variables within the Knowledge / Global Variables section of this Pack.
+        This validation and augmentation mechanism ensures that essential
+        indexing and categorization attributes are included as required."
+    groupId: vfMW5s
+  - id: eval
+    filter: "true"
+    disabled: true
+    conf:
+      add:
+        - value: index || C.vars.index.concat('_dns')
+          name: index
+        - name: sourcetype
+          value: sourcetype || 'corelight_'.concat(_path || __e['@path'])
+        - disabled: true
+          value: _system_name
+          name: host
+      remove:
+        - message
+    groupId: vfMW5s
+    description: Define Index and source types - Index Var defined in Knowledge /
+      Global Variables
+  - id: comment
+    filter: "true"
+    disabled: false
+    conf:
+      comment: DNS Data Exfiltration Detection is a set of functions designed to
+        scrutinize Corelight DNS logs for signs of potential data exfiltration
+        through Base64-encoded subdomains. These functions actively monitor DNS
+        queries and intelligently flag any queries that exhibit behaviors
+        consistent with data exfiltration attempts. By identifying suspicious
+        DNS activity, this detection mechanism enhances security monitoring and
+        enables timely response to potential threats.
+    groupId: PmMnc1
+  - id: regex_extract
+    filter: "true"
+    disabled: true
+    conf:
+      source: hostname
+      iterations: 100
+      overwrite: false
+      regex: /(?<__encoded_part>(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=))/
+    groupId: PmMnc1
+  - id: eval
+    filter: __encoded_part
+    disabled: true
+    conf:
+      add:
+        - disabled: false
+          name: exfill
+          value: C.Decode.base64(__encoded_part)
+        - disabled: false
+          name: query_decode
+          value: exfill+'.'+maindomain
+        - disabled: false
+          name: potential_exfill
+          value: "exfill ? true : undefined"
+      remove:
+        - log_format
+    groupId: PmMnc1
+  - id: eval
+    filter: "true"
+    disabled: true
+    conf:
+      add:
+        - disabled: false
+          name: hostname
+          value: C.Encode.base64('stealmydata')
+    description: This function is just to test/prove the existence of an encoded
+      base64 query content
+    groupId: PmMnc1
+  - id: comment
+    filter: "true"
+    disabled: false
+    conf:
+      comment: "DNS Tunneling Focus: It's important to note that DNS tunneling
+        exclusively involves UDP DNS queries as the medium for executing
+        tunneling activities."
+    groupId: PmMnc1
+  - id: eval
+    filter: " proto === 'udp' && query.length > 256 && (query.indexOf('.') === -1)"
+    disabled: false
+    conf:
+      add:
+        - disabled: false
+          name: istunneling
+          value: "'true'"
+    description: Creates the istunneling field with a true/false flag
+    groupId: PmMnc1
+  - id: comment
+    filter: "true"
+    disabled: false
+    conf:
+      comment: "Optional Domain and Subdomain Extractor: An optional utility for
+        extracting domains and subdomains is available, designed solely as an
+        extraction tool. It's worth noting that this extractor should be used
+        judiciously due to its potential to increase the amount of ingested
+        data. Careful consideration is advised while employing this tool to
+        avoid unnecessary data influx."
+    groupId: PmMnc1
+  - id: code
+    filter: "true"
+    disabled: false
+    conf:
+      maxNumOfIterations: 5000
+      activeLogSampleRate: 1
+      useUniqueLogChannel: false
+      code: |-
+        __e['maindomain'] = []
+          var domain = __e['query'].toLowerCase();
+          var parts = domain.split('.');
+          var numParts = parts.length;
+          var mainDomain = parts[numParts - 2] + '.' + parts[numParts - 1];
+          var subdomains = parts.slice(0, numParts - 2);
+          var hostname = subdomains[subdomains.length - 1];
+          var cloudProvider = '';
+            __e['maindomain'] = mainDomain;
+          __e['subdomains'] = subdomains;
+          __e['hostname'] = hostname;
+    groupId: PmMnc1
+  - id: comment
+    filter: "true"
+    disabled: null
+    conf:
+      comment: >-
+        VERY IMPORTANT:
+
+        The decision on which fields to remove largely depends on the use case, investigative needs, and the specific environment. We can make some general recommendations for fields that might be considered "less critical" in a typical environment and could potentially be safely removed for data reduction purposes. Keep in mind, these are suggestions, and you should review and confirm based on your own requirements and validate with your team.
+    groupId: X42G34
+  - id: code
+    filter: "true"
+    disabled: false
+    conf:
+      maxNumOfIterations: 5000
+      code: >-
+        var domain = __e['query'].toLowerCase();
+          var parts = domain.split('.');   // start off by splitting the query string into it's parts separated by "."
+          var numParts = parts.length;    // Get the number of parts
+          var subdomains = [];    // Initialize a list of subdomains that we will build
+          //  First Check if we have have 2 parts, if so no host is in the query, just the domain so add as the (only) domain to check against the topN
+          //  Else we have more than 2 parts - build an array of subdomains to check starting with the largest, most specific domain
+          //  For example if we have a query of "v20.events.data.microsoft.com", our array will be ["events.data.microsoft.com","data.microsoft.com","microsoft.com"]
+          //  Need to check assumption we always want to drop the 1st/host part of the query too
+          //  Also need to address multiple queries in query and/or proto?
+          if (numParts == 2)
+          {
+            subdomains.push(__e['query']);
+          }
+          else
+          {
+            for (var i = 0; i<numParts-2; i++)
+            {
+              var sub = "";
+              for (var j=i+1;j<=numParts-1;j++)
+              {
+                sub += (sub == "") ? parts[j] : "."+parts[j];
+              }
+              subdomains.push(sub);
+            }
+          }
+          //  Now that we have our list of domains/subdomains to check, loop through until we find a match
+            for (var sdn = 0, rank = 0; sdn < subdomains.length && rank == 0;sdn++)
+          {
+            rank = C.Lookup('top-1k.csv', 'Domain').match(subdomains[sdn], 'Rank');
+          }
+          if (rank) __e['Rank'] = rank;
+    groupId: X42G34
+    description: This code function checks the query against the top-1k.csv list
+      including checking all subdomains.
+  - id: comment
+    filter: "true"
+    disabled: false
+    conf:
+      comment: "Rank Configuration Flexibility: The rank functionality can be
+        customized to align with the provided top-1k.CSV list found in Knowledge
+        / Lookups session of this Pack, or alternatively adjusted to optimize
+        performance according to specific requirements."
+    groupId: X42G34
+  - id: drop
+    filter: Rank && Rank < 100
+    disabled: false
+    conf: {}
+    groupId: X42G34
+    description: "If the DNS Event was a lookup of a site in the Top 1K (lookup in
+      the Knowledge Object 'top-1k.csv' drop the event. "
+  - id: comment
+    filter: "true"
+    disabled: false
+    conf:
+      comment: "Exclusion of East-West Traffic: The process involves filtering out
+        traffic that moves between east and west directions."
+    groupId: X42G34
+  - id: drop
+    filter: C.Net.isPrivate(__e['id.orig_h'] && C.Net.isPrivate(__e['id.resp_h']))
+    disabled: false
+    conf: {}
+    description: Drops East <--> West Traffic.  Validate if both orig_h and resp_h
+      are in the ICAAN private IP space.  If you need to perform further checks
+      for internal CIDR blocks not in the ICAAN  private space, modify the
+      Filter as needed
+    final: false
+    groupId: X42G34
+  - id: comment
+    filter: "true"
+    disabled: null
+    conf:
+      comment: >-
+        Redundant or Less Informative Timestamps:
+
+
+        ts: You have _time which also holds the timestamp of the event. You might consider keeping only one of these unless they offer distinct information.
+    groupId: X42G34
+  - id: eval
+    filter: "true"
+    disabled: null
+    conf:
+      remove:
+        - ts
+    groupId: X42G34
+  - id: comment
+    filter: "true"
+    disabled: null
+    conf:
+      comment: >-
+        DNS Flags and Response:
+
+
+        qtypeqtype_name: The name seems redundant or a typo. If this field's value is consistently the same as qtype, you might consider one for removal.
+
+
+        rcode: Ensure that the values in this field (like "F") are understood and map to known DNS response codes. If not, consider its relevance.
+
+
+        AA: Ensure that the "T" and "F" values map to the expected "True" and "False" meanings for the Authoritative Answer bit. If you're confident in understanding these shorthands, you might not need to modify this.
+    groupId: X42G34
+  - id: eval
+    filter: "true"
+    disabled: null
+    conf:
+      remove:
+        - qtypeqtype_name
+        - AA
+        - rcode
+    groupId: X42G34
+  - id: comment
+    filter: "true"
+    disabled: null
+    conf:
+      comment: >-
+        Network and Protocol Details:
+
+
+        proto: This indicates the transport protocol. If you're only dealing with DNS over UDP (which is common but not exclusive), and this doesn't change, consider its relevance. However, with the emergence of DNS over HTTPS (DoH) and DNS over TLS (DoT), retaining this could be useful.
+    groupId: X42G34
+  - id: eval
+    filter: "true"
+    disabled: true
+    conf:
+      remove:
+        - proto
+    groupId: X42G34
+  - id: eval
+    filter: "true"
+    disabled: false
+    conf:
+      remove:
+        - "'spcap.rule'"
+        - "'spcap.trigger'"
+    description: "Removes duplicative fields (rcode_name, qtype_name, qclass_name)
+      where a field with the pneumonic also exists.  Remove reserved field in
+      (z) and spcap fields "
+    groupId: X42G34
+  - id: comment
+    filter: "true"
+    disabled: null
+    conf:
+      comment: 'Optional UID Correlation with Redis: This functionality provides the
+        choice to establish UID (Unique Identifier) correlation using Redis.
+        This correlation spans across all Corelight datasets / log types that
+        are being ingested (including other pipelines). The result of this
+        correlation becomes evident in the "Conn" logs, where UIDs that are also
+        present in other log types associated with the same event are displayed.
+        This feature contributes to an increased level of visibility within your
+        system of analysis, augmenting the depth of insight available for SOC
+        investigations. By linking UIDs across different log types, the tool
+        facilitates more comprehensive and effective scrutiny of security
+        events.'
+  - id: redis
+    filter: _path != 'conn' && _path != 'conn_red'
+    disabled: true
+    conf:
+      commands:
+        - outField: __sadd_result
+          command: sadd
+          keyExpr: "`corelight_logs:${uid}`"
+          argsExpr: _path
+        - command: expire
+          keyExpr: "`corelight_logs:${uid}`"
+          argsExpr: "3600"
+      deploymentType: standalone
+      authType: none
+      maxBlockSecs: 60
+      tlsOptions:
+        rejectUnauthorized: false
+      url: "`redis://your_redis_ip_address>:6379`"
+    description: Adds to the Redis server the UID related to DNS logs. these values
+      expire (are removed from Redis) every 5 min. by default
+    groupId: YfqmCs
+  - id: comment
+    filter: "true"
+    disabled: null
+    conf:
+      comment: >-
+        Compliance Options - CIM, ECS, MS Sentinel and Chronicle Unified Data
+        Model (UDM):
+
+        CIM (Common Information Model):
+
+        Splunk CIM Sourcetype to Data Model Mapping:
+
+        corelight_conn maps to Network_Sessions
+
+        corelight_conn maps to Network_Traffic
+
+        corelight_dhcp maps to Network_Sessions
+
+        corelight_dns maps to Network_Resolution
+
+        corelight_http maps to Web
+
+        corelight_smtp maps to Email
+
+        corelight_ssl maps to Certificates
+
+
+        ECS (Elastic Common Schema):
+
+        A unified chained pipeline CL_ECS-Chained covers: conn, dns, ssl, http, SSH, SSL, x509, Files, Stepping, RDP, DCE_RDP, SMB_Files, SMB_Mapping, Weird, Notice, Suricata Corelight datasets / log-types.
+
+
+        MS Sentinel:
+
+        Covers Sentinel Name, Asim and Suffixed name Formats
+
+        All datasets are linked via the Sentinel_cols_mappings.csv table.
+
+
+        Chronicle Unified Data Model (UDM)
+  - id: eval
+    filter: corelight_logs
+    disabled: true
+    conf:
+      add:
+        - disabled: false
+          name: spl
+          value: "`index=${index} sourcetype=${sourcetype} uid=${uid}` + (corelight_logs ?
+            ` OR index=${index} uid=${uid} sourcetype=` + corelight_logs.join(`
+            OR index=${index} uid=${uid} sourcetype=`) : '')"
+    groupId: 2o22xv
+  - id: chain
+    filter: "true"
+    disabled: true
+    conf:
+      processor: CIM_Network_Resolution-Chained
+    groupId: 2o22xv
+  - id: eval
+    filter: corelight_logs
+    disabled: true
+    conf:
+      add:
+        - disabled: false
+          name: esquery
+          value: "`uid:${uid} OR _path:${corelight_logs[0]} OR
+            _path:${corelight_logs[1]}`"
+    groupId: kEXHMA
+  - id: chain
+    filter: "true"
+    disabled: true
+    conf:
+      processor: CL_ECS-Chained
+    groupId: kEXHMA
+  - id: comment
+    filter: "true"
+    disabled: true
+    conf:
+      comment: "Attention: Select one of the three options"
+    groupId: N1s5MI
+  - id: comment
+    filter: "true"
+    disabled: true
+    conf:
+      comment: Sentinel name format
+    groupId: N1s5MI
+  - id: rename
+    filter: C.Lookup('Sentinel_cols_mapping.csv','dataset').match(_path)
+    disabled: true
+    conf:
+      wildcardDepth: 4
+      renameExpr: C.Lookup('Sentinel_cols_mapping.csv', 'json_name').match(name,
+        'sentinel_name')
+      baseFields: []
+      rename: []
+    groupId: N1s5MI
+  - id: comment
+    filter: "true"
+    disabled: true
+    conf:
+      comment: Asim format
+    groupId: N1s5MI
+  - id: rename
+    filter: C.Lookup('Sentinel_cols_mapping.csv','dataset').match(_path)
+    disabled: true
+    conf:
+      wildcardDepth: 4
+      renameExpr: C.Lookup('Sentinel_cols_mapping.csv', 'json_name').match(name,
+        'asim_name')
+      baseFields: []
+      rename: []
+    groupId: N1s5MI
+  - id: comment
+    filter: "true"
+    disabled: true
+    conf:
+      comment: Suffixed name format
+    groupId: N1s5MI
+  - id: rename
+    filter: C.Lookup('Sentinel_cols_mapping.csv','dataset').match(_path)
+    disabled: true
+    conf:
+      wildcardDepth: 4
+      renameExpr: C.Lookup('Sentinel_cols_mapping.csv', 'json_name').match(name,
+        'suffixed_name')
+      baseFields: []
+      rename: []
+    groupId: N1s5MI
+  - id: chain
+    filter: "true"
+    disabled: true
+    conf:
+      processor: CL_Chronicle_Chained
+    groupId: AsPgTh
+  - id: comment
+    filter: "true"
+    disabled: null
+    conf:
+      comment: >-
+        Cleanup Functions and Serialization:
+
+        In the cleanup phase, the serialization process determines the fields that are retained within the `_raw` field. This decision influences the event size, contingent on the number of fields retained or removed, as well as the chosen serialization method. The serialization options include JSON, Key-Value Pair, and CSV formats. The selection of serialization type impacts the data structure and, subsequently, the overall size of the event. 
+
+        Careful consideration is advised to strike a balance between event comprehensiveness and efficient data storage.
+  - id: serialize
+    filter: _path.includes('dns') || __e['@path'].includes('dns')
+    disabled: true
+    conf:
+      type: kvp
+      fields:
+        - "!_*"
+        - "!index"
+        - "!sourcetype"
+        - "!cribl*"
+        - "!history_description"
+        - "!sampled"
+        - "*"
+      dstField: _raw
+      cleanFields: true
+      delimChar: ","
+      quoteChar: '"'
+      escapeChar: \
+      nullValue: "-"
+    groupId: ZGkPkS
+  - id: eval
+    filter: _path.includes('dns') || __e['@path'].includes('dns')
+    disabled: true
+    conf:
+      remove:
+        - "*"
+      keep:
+        - _raw
+        - index
+        - sourcetype
+    description: Cleanup
+    groupId: ZGkPkS

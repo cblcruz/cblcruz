@@ -1,0 +1,45 @@
+output: default
+streamtags: []
+groups: {}
+asyncFuncTimeout: 1000
+functions:
+  - id: rename
+    filter: "true"
+    disabled: false
+    conf:
+      wildcardDepth: 5
+      rename:
+        - currentName: "'id.orig_h'"
+          newName: src_ip
+        - newName: dest_ip
+          currentName: "'id.resp_h'"
+        - currentName: resp_bytes
+          newName: bytes_in
+        - currentName: "'id.orig_h'"
+          newName: src
+        - currentName: "'id.orig_h'"
+          newName: dest
+        - currentName: server_name
+          newName: dest_dns
+        - currentName: client_fqdn
+          newName: src_dns
+        - newName: session_id
+          currentName: uid
+        - currentName: user_id2
+          newName: user_id
+        - currentName: host_name
+          newName: dest_nt_host
+        - newName: dest_mac
+          currentName: mac
+        - currentName: client_addr
+          newName: src_ip
+        - currentName: assigned_addr
+          newName: dest_ip
+        - newName: src_dns
+          currentName: client_fqdn
+        - currentName: client_fqdn
+          newName: dest_dns
+        - currentName: msg_types
+          newName: signature
+        - currentName: uids
+          newName: session_id

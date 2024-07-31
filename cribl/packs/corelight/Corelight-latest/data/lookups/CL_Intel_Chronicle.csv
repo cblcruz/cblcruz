@@ -1,0 +1,12 @@
+seen_indicator_type,metadata_entity_type
+Intel::ADDR,IP_ADDRESS
+Intel::DOMAIN,DOMAIN_NAME
+Intel::SUBNET,RESOURCE
+Intel::SOFTWARE,RESOURCE
+Intel::CERT_HASH,RESOURCE
+Intel::PUBKEY_HASH,RESOURCE
+Intel::URL,URL
+Intel::EMAIL,USER
+Intel::USER_NAME,USER
+Intel::FILE_HASH,FILE
+Intel::FILE_NAME,FILE
